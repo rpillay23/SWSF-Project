@@ -7,7 +7,7 @@ from docx import Document
 from docx.shared import Inches as DocxInches
 import os
 
-# === Page Config & Styling ===
+# === Page Configuration and Styling ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 
 st.markdown("""
@@ -15,20 +15,27 @@ st.markdown("""
     html, body, [class*="css"] {
         font-family: 'Helvetica Neue', Helvetica, sans-serif;
         background-color: white;
-        color: black;
+        color: #003366;
+    }
+
+    h1, h2, h3, .stMarkdown {
+        color: #003366;
+        font-weight: bold;
+    }
+
+    .title-box {
+        background-color: #B0C4DE;
+        border: 5px solid #003366;
+        border-radius: 10px;
+        padding: 1em;
+        text-align: center;
+        margin-bottom: 20px;
     }
 
     .title-box h1 {
         font-size: 28px;
         font-weight: bold;
-        color: black;
-        text-align: center;
-        margin-bottom: 0;
-        text-shadow:
-            -1px  0 #003366,
-             1px  0 #003366,
-             0  1px #003366,
-             0 -1px #003366;
+        margin: 0;
     }
 
     .subtitle {
@@ -36,12 +43,7 @@ st.markdown("""
         color: #003366;
         text-align: center;
         font-stretch: condensed;
-        margin-bottom: 20px;
-    }
-
-    h2, h3, .stMarkdown {
-        font-weight: bold;
-        color: black;
+        margin-bottom: 30px;
     }
 
     .stButton > button {
@@ -61,15 +63,17 @@ st.markdown("""
         background-color: #f0f8ff;
         padding: 1em;
         border-radius: 8px;
+        color: #003366;
+        font-weight: bold;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# === Title + Subtitle ===
+# === Title & Subtitle ===
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
 
-# === Sanitizer for Unicode
+# === Helper: Clean Unicode Characters ===
 def sanitize_string(s):
     if isinstance(s, str):
         return (
@@ -92,7 +96,7 @@ try:
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.divider()
 
-    # === Metrics: 7 Boxes in One Row ===
+    # === Portfolio Metrics: 7 columns ===
     st.subheader("Portfolio Averages and Totals")
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
