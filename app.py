@@ -119,34 +119,42 @@ try:
         return ppt_file
 
     def create_pdf(df):
-        df = df.applymap(sanitize_string)  # 👈 Sanitize again just in case
+    df = df.applymap(sanitize_string)
 
-        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+    avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
 
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
-        pdf.set_font("Arial", size=12)
-        pdf.ln(10)
+    pdf = FPDF()
+    pdf.add_page()
 
-        pdf.cell(0, 10, "Portfolio Averages:", ln=True)
-        for k, v in avg.items():
-            pdf.cell(0, 10, f"{k}: {v}", ln=True)
+    # Add a Unicode-compatible font (DejaVu)
+    font_path = "fonts/DejaVuSans.ttf"
+    if not os.path.exists(font_path):
+        raise FileNotFoundError("DejaVuSans.ttf not found. Please place it in a 'fonts' folder.")
 
-        chart_file = "streamlit_chart.png"
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(chart_file)
-        plt.close()
+    pdf.add_font("DejaVu", "", font_path, uni=True)
+    pdf.set_font("DejaVu", "", 14)
+    pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
+    pdf.ln(10)
 
-        pdf.image(chart_file, w=170)
+    pdf.set_font("DejaVu", "", 12)
+    pdf.cell(0, 10, "Portfolio Averages:", ln=True)
+    for k, v in avg.items():
+        pdf.cell(0, 10, f"{k}: {v}", ln=True)
 
-        pdf_file = "HNW_Investment_Summary.pdf"
-        pdf.output(pdf_file)
-        return pdf_file
+    # Save chart image
+    chart_file = "streamlit_chart.png"
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig(chart_file)
+    plt.close()
+
+    pdf.image(chart_file, w=170)
+
+    pdf_file = "HNW_Investment_Summary.pdf"
+    pdf.output(pdf_file)
+    return pdf_file
 
     # === Buttons ===
     col1, col2 = st.columns(2)
