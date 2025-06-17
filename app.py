@@ -135,7 +135,7 @@ try:
         pdf.set_font("DejaVu", "", 12)
         pdf.cell(0, 10, "Portfolio Averages:", ln=True)
         for k, v in avg.items():
-            pdf.cell(0, 10, f"{str(k)}: {str(v)}", ln=True)
+            pdf.cell(0, 10, f"{k}: {v}", ln=True)  # safe string formatting here
 
         chart_file = "streamlit_chart.png"
         fig, ax = plt.subplots(figsize=(10, 4))
