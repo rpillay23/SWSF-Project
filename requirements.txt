@@ -4,3 +4,4 @@ python-pptx
 fpdf
 openpyxl
 python-docx
+yfinance
