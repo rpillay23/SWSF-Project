@@ -19,7 +19,7 @@ st.markdown("""
     /* Headers with dark blue border around each letter */
     h1, h2, h3, .stMarkdown {
         color: black;
-        font-weight: bold;
+        font-weight: 600;
         /* text stroke for letter border */
         -webkit-text-stroke: 1.5px #003366;
         text-stroke: 1.5px #003366;
@@ -39,7 +39,7 @@ st.markdown("""
         border-radius: 6px;
         padding: 0.5em 1em;
         border: none;
-        font-weight: bold;
+        font-weight: 600;
     }
     .stButton > button:hover {
         background-color: #0055a5;
