@@ -19,6 +19,9 @@ st.markdown("""
     h1, h2, h3, .stMarkdown {
         color: black;
         font-weight: bold;
+        border: 2px solid #003366;
+        padding: 5px;
+        dispaly: inline-block;
     }
     .title-box {
         border: 7px solid #003366;
