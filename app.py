@@ -171,4 +171,4 @@ try:
                 st.download_button("Download PDF", f, file_name=pdf_file)
 
 except Exception as e:
-    st.error(f"⚠️ Error loading Excel file: {e}")
+    st.error(f"⚠️ Error loading Excel f
