@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import yfinance as yf
 from pptx import Presentation
 from pptx.util import Inches
 from docx import Document
 from docx.shared import Inches as DocxInches
-import os
+import yfinance as yf
 
 # === Page Configuration and Styling ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
@@ -74,35 +73,6 @@ st.markdown("""
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
 
-# === Fetch Real-Time S&P 500 Data ===
-@st.cache_data
-def fetch_sp500_data():
-    sp500 = yf.Ticker('^GSPC')
-    hist = sp500.history(period='1d')
-    return hist
-
-sp500_data = fetch_sp500_data()
-
-# === Display S&P 500 Metrics ===
-latest_close = sp500_data['Close'].iloc[-1]
-previous_close = sp500_data['Close'].iloc[-2]
-daily_change = latest_close - previous_close
-percent_change = (daily_change / previous_close) * 100
-
-st.subheader("S&P 500 Real-Time Data")
-col1, col2 = st.columns(2)
-col1.metric("Latest Close", f"${latest_close:,.2f}")
-col2.metric("Daily Change", f"${daily_change:,.2f} ({percent_change:+.2f}%)")
-
-# === Historical Returns Chart ===
-st.subheader("S&P 500 Historical Returns (Past Year)")
-fig, ax = plt.subplots(figsize=(10, 6))
-sp500_data['Close'].plot(ax=ax)
-ax.set_title("S&P 500 Closing Price Over the Last Year")
-ax.set_xlabel("Date")
-ax.set_ylabel("Price (USD)")
-st.pyplot(fig)
-
 # === Helper: Clean Unicode Characters ===
 def sanitize_string(s):
     if isinstance(s, str):
@@ -116,8 +86,43 @@ def sanitize_string(s):
         )
     return s
 
+# === Cache yfinance data fetch for 10 minutes ===
+@st.cache_data(ttl=600)
+def get_sp500_data():
+    sp500 = yf.Ticker("^GSPC")
+    hist = sp500.history(period="1mo")
+    hist.reset_index(inplace=True)
+    return hist
+
+# === Real-Time Market Data Section ===
+st.subheader("Real-Time Market Data: S&P 500")
+
+sp500_data = get_sp500_data()
+if not sp500_data.empty:
+    latest = sp500_data.iloc[-1]
+    prev = sp500_data.iloc[-2]
+    latest_close = latest['Close']
+    prev_close = prev['Close']
+    change = latest_close - prev_close
+    pct_change = (change / prev_close) * 100
+
+    st.metric("Latest Close", f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(sp500_data['Date'], sp500_data['Close'], label='S&P 500 Close', color='#003366')
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Price ($)")
+    ax.set_title("S&P 500 Last 30 Days")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+else:
+    st.warning("Failed to fetch S&P 500 data.")
+
+st.divider()
+
 try:
-    # === Load Excel ===
+    # === Load Excel Data ===
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
     df = df.applymap(sanitize_string)
 
@@ -126,7 +131,7 @@ try:
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.divider()
 
-    # === Portfolio Metrics: 7 columns ===
+    # === Portfolio Metrics: 7 columns inline ===
     st.subheader("Portfolio Averages and Totals")
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
@@ -175,7 +180,7 @@ try:
     st.dataframe(filtered_df, use_container_width=True)
     st.divider()
 
-    # === Reports ===
+    # === Report Generators ===
     st.subheader("Generate Reports")
 
     def create_ppt(df):
