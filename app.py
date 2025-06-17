@@ -6,20 +6,34 @@ from pptx.util import Inches
 from fpdf import FPDF
 import os
 
+# === Utility to clean problematic Unicode characters ===
+def sanitize_string(s):
+    if isinstance(s, str):
+        return (
+            s.replace("–", "-")
+             .replace("’", "'")
+             .replace("“", '"')
+             .replace("”", '"')
+             .replace("•", "-")
+             .replace("©", "(c)")
+        )
+    return s
+
 st.set_page_config(page_title="HNW Investment Matrix", layout="wide")
 st.title("📊 HNW Investment Matrix (Comprehensive & Editable)")
 
 try:
-    # Load Excel file
+    # === Load and clean Excel ===
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
+    df = df.applymap(sanitize_string)  # 👈 Sanitize strings after reading Excel
 
-    # Editable Table
+    # === Editable Table ===
     st.subheader("🔧 Edit Investment Data")
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
 
     st.divider()
 
-    # Portfolio Metrics
+    # === Portfolio Metrics ===
     st.subheader("📈 Portfolio Averages & Totals")
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
@@ -34,7 +48,7 @@ try:
 
     st.divider()
 
-    # Charts
+    # === Charts ===
     st.subheader("📊 Expected Return by Investment")
     st.bar_chart(edited_df.set_index("Investment Name")["Expected Return (%)"])
 
@@ -49,19 +63,19 @@ try:
 
     st.divider()
 
-    # Filters
+    # === Filters ===
     st.subheader("🎯 Filter by Time Horizon, Inflation Hedge, or Min Investment")
     time_options = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
     hedge_options = ["All", "Yes", "No"]
 
     time_filter = st.selectbox("Select Time Horizon", time_options)
     hedge_filter = st.selectbox("Inflation Hedge?", hedge_options)
-    min_inv_filter = st.slider("Minimum Investment ($)", 
-                               int(edited_df["Minimum Investment ($)"].min()), 
-                               int(edited_df["Minimum Investment ($)"].max()), 
+    min_inv_filter = st.slider("Minimum Investment ($)",
+                               int(edited_df["Minimum Investment ($)"].min()),
+                               int(edited_df["Minimum Investment ($)"].max()),
                                int(edited_df["Minimum Investment ($)"].min()))
 
-    # Apply Filters
+    # === Apply Filters ===
     filtered_df = edited_df.copy()
     if time_filter != "All":
         filtered_df = filtered_df[filtered_df["Time Horizon (Short/Medium/Long)"] == time_filter]
@@ -76,20 +90,7 @@ try:
     st.divider()
     st.subheader("📥 Generate Reports")
 
-    # === Utility to sanitize strings for PDF
-    def sanitize_string(s):
-        if isinstance(s, str):
-            return (
-                s.replace("–", "-")
-                 .replace("’", "'")
-                 .replace("“", '"')
-                 .replace("”", '"')
-                 .replace("•", "-")
-                 .replace("©", "(c)")
-            )
-        return s
-
-    # === PowerPoint Generator
+    # === File Generation Functions ===
     def create_ppt(df):
         prs = Presentation()
         slide = prs.slides.add_slide(prs.slide_layouts[0])
@@ -117,9 +118,9 @@ try:
         prs.save(ppt_file)
         return ppt_file
 
-    # === PDF Generator
     def create_pdf(df):
-        df = df.applymap(sanitize_string)
+        df = df.applymap(sanitize_string)  # 👈 Sanitize again just in case
+
         avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
 
         pdf = FPDF()
@@ -142,13 +143,13 @@ try:
         plt.close()
 
         pdf.image(chart_file, w=170)
+
         pdf_file = "HNW_Investment_Summary.pdf"
         pdf.output(pdf_file)
         return pdf_file
 
-    # === Interactive Buttons
+    # === Buttons ===
     col1, col2 = st.columns(2)
-
     with col1:
         if st.button("📽 Generate PowerPoint"):
             ppt_file = create_ppt(filtered_df)
