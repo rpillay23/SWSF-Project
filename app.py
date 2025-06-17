@@ -7,48 +7,56 @@ from docx import Document
 from docx.shared import Inches as DocxInches
 import os
 
-# === Page & Custom CSS ===
+# === Page Config & Styling ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
+
 st.markdown("""
     <style>
     html, body, [class*="css"] {
-        font-family: 'Helvetica Neue', sans-serif;
+        font-family: 'Helvetica Neue', Helvetica, sans-serif;
         background-color: white;
         color: black;
     }
-    h1, h2, h3, .stMarkdown {
-        color: black;
-        font-weight: 600;
-    }
+
     .title-box h1 {
         font-size: 28px;
-        font-weight: 600;
+        font-weight: bold;
         color: black;
         text-align: center;
+        margin-bottom: 0;
         text-shadow:
             -1px  0 #003366,
              1px  0 #003366,
              0  1px #003366,
              0 -1px #003366;
     }
+
     .subtitle {
-        color: #003366;
         font-size: 16px;
-        font-stretch: extra-condensed;
+        color: #003366;
         text-align: center;
-        margin-top: -10px;
-        margin-bottom: 30px;
+        font-stretch: condensed;
+        margin-bottom: 20px;
     }
+
+    h2, h3, .stMarkdown {
+        font-weight: bold;
+        color: black;
+    }
+
     .stButton > button {
         background-color: #003366;
         color: white;
         border-radius: 6px;
         padding: 0.5em 1em;
         border: none;
+        font-weight: bold;
     }
+
     .stButton > button:hover {
         background-color: #0055a5;
     }
+
     .stMetric {
         background-color: #f0f8ff;
         padding: 1em;
@@ -57,11 +65,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# === Title and Subtitle ===
+# === Title + Subtitle ===
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
 
-# === String Sanitizer ===
+# === Sanitizer for Unicode
 def sanitize_string(s):
     if isinstance(s, str):
         return (
@@ -84,7 +92,7 @@ try:
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.divider()
 
-    # === Metrics in One Row ===
+    # === Metrics: 7 Boxes in One Row ===
     st.subheader("Portfolio Averages and Totals")
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
@@ -94,7 +102,6 @@ try:
     col5.metric("Avg Volatility", f"{edited_df['Volatility (1–10)'].mean():.2f}")
     col6.metric("Avg Fees (%)", f"{edited_df['Fees (%)'].mean():.2f}%")
     col7.metric("Avg Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
-
     st.divider()
 
     # === Charts ===
@@ -109,7 +116,6 @@ try:
         size="Expected Return (%)",
         color="Category"
     )
-
     st.divider()
 
     # === Filters ===
@@ -133,11 +139,11 @@ try:
 
     st.subheader("Filtered Investment Table")
     st.dataframe(filtered_df, use_container_width=True)
-
     st.divider()
+
+    # === Reports ===
     st.subheader("Generate Reports")
 
-    # === PowerPoint Generation ===
     def create_ppt(df):
         prs = Presentation()
         slide = prs.slides.add_slide(prs.slide_layouts[0])
@@ -165,7 +171,6 @@ try:
         prs.save(ppt_file)
         return ppt_file
 
-    # === Word Report Generation ===
     def create_docx(df):
         document = Document()
         document.add_heading("HNW Investment Summary", 0)
@@ -189,7 +194,6 @@ try:
         document.save(docx_file)
         return docx_file
 
-    # === Download Buttons ===
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Generate PowerPoint"):
