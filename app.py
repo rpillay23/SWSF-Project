@@ -13,7 +13,7 @@ st.markdown("""
     <style>
     html, body, [class*="css"] {
         font-family: 'Helvetica Neue', sans-serif;
-        background-color: light-blue;
+        background-color: white;
         color: black;
     }
     h1, h2, h3, .stMarkdown {
@@ -21,9 +21,9 @@ st.markdown("""
         font-weight: bold;
     }
     .title-box {
-        border: 2px solid #003366;
+        border: 4px solid #003366;
         padding: 1em;
-        border-radius: 8px;
+        border-radius: 12px;
         background-color: #ffffff;
         text-align: center;
     }
