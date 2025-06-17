@@ -136,8 +136,16 @@ try:
 
         pdf.set_font("DejaVu", "", 12)
         pdf.cell(0, 10, "Portfolio Averages:", ln=True)
+
+        # Debug-safe loop
         for k, v in avg.items():
-            pdf.cell(0, 10, f"{str(k)}: {str(v)}", ln=True)
+            try:
+                key_str = str(k)
+                val_str = str(v)
+                pdf.cell(0, 10, f"{key_str}: {val_str}", ln=True)
+            except Exception as e:
+                st.error(f"Error generating PDF line for {k}: {v} — {e}")
+                raise e
 
         chart_file = "streamlit_chart.png"
         fig, ax = plt.subplots(figsize=(10, 4))
@@ -151,6 +159,10 @@ try:
         pdf_file = "HNW_Investment_Summary.pdf"
         pdf.output(pdf_file)
         return pdf_file
+
+    # === Debug print of filtered_df dtypes to help troubleshoot PDF issues ===
+    st.write("Filtered DataFrame column types (for debugging):")
+    st.write(filtered_df.dtypes)
 
     # === Buttons ===
     col1, col2 = st.columns(2)
