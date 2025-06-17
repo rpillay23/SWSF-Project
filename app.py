@@ -21,10 +21,10 @@ st.markdown("""
         font-weight: bold;
     }
     .title-box {
-        border: 4px solid #003366;
+        border: 7px solid #003366;
         padding: 1em;
-        border-radius: 12px;
-        background-color: #ffffff;
+        border-radius: 20px;
+        background-color: #B0C4DE;
         text-align: center;
     }
     .stButton > button {
