@@ -116,40 +116,39 @@ try:
         return ppt_file
 
     # === PDF Generation (Unicode-safe) ===
-    def create_pdf(df):
-        df = df.applymap(sanitize_string)
-        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+   def create_pdf(df):
+    df = df.applymap(sanitize_string)
+    avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
 
-        pdf = FPDF()
-        pdf.add_page()
+    pdf = FPDF()
+    pdf.add_page()
 
-        # Load Unicode-compatible font
-        font_path = "fonts/DejaVuSans.ttf"
-        if not os.path.exists(font_path):
-            raise FileNotFoundError("⚠️ 'DejaVuSans.ttf' not found in /fonts. Download it and place it in a 'fonts' folder.")
+    font_path = "fonts/DejaVuSans.ttf"
+    if not os.path.exists(font_path):
+        raise FileNotFoundError("⚠️ 'DejaVuSans.ttf' not found in /fonts. Please download it and place it in a 'fonts' folder.")
 
-        pdf.add_font("DejaVu", "", font_path, uni=True)
-        pdf.set_font("DejaVu", "", 16)
-        pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
-        pdf.ln(10)
+    pdf.add_font("DejaVu", "", font_path, uni=True)
+    pdf.set_font("DejaVu", "", 16)
+    pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
+    pdf.ln(10)
 
-        pdf.set_font("DejaVu", "", 12)
-        pdf.cell(0, 10, "Portfolio Averages:", ln=True)
-        for k, v in avg.items():
-            pdf.cell(0, 10, f"{k}: {v}", ln=True)
+    pdf.set_font("DejaVu", "", 12)
+    pdf.cell(0, 10, "Portfolio Averages:", ln=True)
+    for k, v in avg.items():
+        pdf.cell(0, 10, f"{str(k)}: {str(v)}", ln=True)
 
-        chart_file = "streamlit_chart.png"
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(chart_file)
-        plt.close()
+    chart_file = "streamlit_chart.png"
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.savefig(chart_file)
+    plt.close()
 
-        pdf.image(chart_file, w=170)
-        pdf_file = "HNW_Investment_Summary.pdf"
-        pdf.output(pdf_file)
-        return pdf_file
+    pdf.image(chart_file, w=170)
+    pdf_file = "HNW_Investment_Summary.pdf"
+    pdf.output(pdf_file)
+    return pdf_file
 
     # === Buttons ===
     col1, col2 = st.columns(2)
