@@ -1,5 +1,10 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+from pptx import Presentation
+from pptx.util import Inches
+from fpdf import FPDF
+import os
 
 st.set_page_config(page_title="HNW Investment Matrix", layout="wide")
 st.title("📊 HNW Investment Matrix (Comprehensive & Editable)")
@@ -68,87 +73,75 @@ try:
     st.subheader("📄 Filtered Investment Table")
     st.dataframe(filtered_df, use_container_width=True)
 
-import matplotlib.pyplot as plt
-from pptx import Presentation
-from pptx.util import Inches
-from fpdf import FPDF
-import os
+    st.divider()
+    st.subheader("📥 Generate Reports")
 
-st.divider()
-st.subheader("📥 Generate Reports")
+    # === File Generation Functions ===
+    def create_ppt(df):
+        prs = Presentation()
+        slide = prs.slides.add_slide(prs.slide_layouts[0])
+        slide.shapes.title.text = "Comprehensive Investment Overview"
+        slide.placeholders[1].text = "Alternative & Traditional Investments"
 
-# === File Generation Functions ===
-def create_ppt(df):
-    prs = Presentation()
+        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+        slide = prs.slides.add_slide(prs.slide_layouts[1])
+        slide.shapes.title.text = "Portfolio Averages"
+        slide.placeholders[1].text = "\n".join([f"{k}: {v}" for k, v in avg.items()])
 
-    # Title slide
-    slide = prs.slides.add_slide(prs.slide_layouts[0])
-    slide.shapes.title.text = "Comprehensive Investment Overview"
-    slide.placeholders[1].text = "Alternative & Traditional Investments"
+        chart_file = "streamlit_chart.png"
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(chart_file)
+        plt.close()
 
-    # Averages slide
-    avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
-    slide = prs.slides.add_slide(prs.slide_layouts[1])
-    slide.shapes.title.text = "Portfolio Averages"
-    slide.placeholders[1].text = "\n".join([f"{k}: {v}" for k, v in avg.items()])
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        slide.shapes.title.text = "Expected Return Chart"
+        slide.shapes.add_picture(chart_file, Inches(1), Inches(1.5), width=Inches(8))
 
-    # Chart slide
-    chart_file = "streamlit_chart.png"
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(chart_file)
-    plt.close()
+        ppt_file = "HNW_Investment_Presentation.pptx"
+        prs.save(ppt_file)
+        return ppt_file
 
-    slide = prs.slides.add_slide(prs.slide_layouts[5])
-    slide.shapes.title.text = "Expected Return Chart"
-    slide.shapes.add_picture(chart_file, Inches(1), Inches(1.5), width=Inches(8))
+    def create_pdf(df):
+        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", "B", 16)
+        pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
+        pdf.set_font("Arial", size=12)
+        pdf.ln(10)
+        pdf.cell(0, 10, "Portfolio Averages:", ln=True)
+        for k, v in avg.items():
+            pdf.cell(0, 10, f"{k}: {v}", ln=True)
 
-    ppt_file = "HNW_Investment_Presentation.pptx"
-    prs.save(ppt_file)
-    return ppt_file
+        chart_file = "streamlit_chart.png"
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(chart_file)
+        plt.close()
 
-def create_pdf(df):
-    avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
-    pdf.set_font("Arial", size=12)
-    pdf.ln(10)
-    pdf.cell(0, 10, "Portfolio Averages:", ln=True)
-    for k, v in avg.items():
-        pdf.cell(0, 10, f"{k}: {v}", ln=True)
+        pdf.image(chart_file, w=170)
+        pdf_file = "HNW_Investment_Summary.pdf"
+        pdf.output(pdf_file)
+        return pdf_file
 
-    chart_file = "streamlit_chart.png"
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(chart_file)
-    plt.close()
+    col1, col2 = st.columns(2)
 
-    pdf.image(chart_file, w=170)
-    pdf_file = "HNW_Investment_Summary.pdf"
-    pdf.output(pdf_file)
-    return pdf_file
+    with col1:
+        if st.button("📽 Generate PowerPoint"):
+            ppt_file = create_ppt(filtered_df)
+            with open(ppt_file, "rb") as f:
+                st.download_button("Download PowerPoint", f, file_name=ppt_file)
 
-# === Interactive Buttons
-col1, col2 = st.columns(2)
-
-with col1:
-    if st.button("📽 Generate PowerPoint"):
-        ppt_file = create_ppt(filtered_df)
-        with open(ppt_file, "rb") as f:
-            st.download_button("Download PowerPoint", f, file_name=ppt_file)
-
-with col2:
-    if st.button("📄 Generate PDF Summary"):
-        pdf_file = create_pdf(filtered_df)
-        with open(pdf_file, "rb") as f:
-            st.download_button("Download PDF", f, file_name=pdf_file)
-
+    with col2:
+        if st.button("📄 Generate PDF Summary"):
+            pdf_file = create_pdf(filtered_df)
+            with open(pdf_file, "rb") as f:
+                st.download_button("Download PDF", f, file_name=pdf_file)
 
 except Exception as e:
     st.error(f"⚠️ Error loading Excel file: {e}")
