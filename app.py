@@ -22,7 +22,7 @@ st.markdown("""
     }
     .title-box {
         border: 7px solid #003366;
-        padding: 15em;
+        padding: 1em;
         border-radius: 1px;
         background-color: #B0C4DE;
         text-align: center;
