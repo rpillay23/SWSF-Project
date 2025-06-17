@@ -3,3 +3,4 @@ matplotlib
 python-pptx
 fpdf
 openpyxl
+python-docx
