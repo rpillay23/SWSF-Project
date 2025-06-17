@@ -16,30 +16,35 @@ st.markdown("""
         background-color: white;
         color: black;
     }
+    /* Headers with dark blue border around each letter */
     h1, h2, h3, .stMarkdown {
         color: black;
         font-weight: bold;
-        border: 2px solid #003366;
-        padding: 5px;
-        dispaly: inline-block;
+        /* text stroke for letter border */
+        -webkit-text-stroke: 1.5px #003366;
+        text-stroke: 1.5px #003366;
     }
     .title-box {
         border: 7px solid #003366;
         padding: 1em;
-        border-radius: 1px;
+        border-radius: 5px;
         background-color: #B0C4DE;
         text-align: center;
+        margin-bottom: 1rem;
     }
+    /* Buttons */
     .stButton > button {
         background-color: #003366;
         color: white;
         border-radius: 6px;
         padding: 0.5em 1em;
         border: none;
+        font-weight: bold;
     }
     .stButton > button:hover {
         background-color: #0055a5;
     }
+    /* Metrics styling */
     .stMetric {
         background-color: #f0f8ff;
         padding: 1em;
@@ -48,8 +53,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title-box"><h1 style="font-size: 28px;">Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
-st.markdown('<h3 style="color: #003366; font-weight: normal; font-size: 16px;">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</h3>', unsafe_allow_html=True)
+# Title with border box and smaller font size
+st.markdown('<div class="title-box"><h1 style="font-size: 28px; margin:0;">Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
+
+# Subtitle with dark blue color, narrower font weight, smaller size
+st.markdown('<h3 style="color: #003366; font-weight: 300; font-size: 16px; margin-top: -1rem;">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</h3>', unsafe_allow_html=True)
 
 # === String sanitizer ===
 def sanitize_string(s):
