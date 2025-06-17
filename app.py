@@ -3,7 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pptx import Presentation
 from pptx.util import Inches
-from fpdf import FPDF
+from docx import Document
+from docx.shared import Inches as DocxInches
 import os
 
 # === Utility to clean problematic Unicode characters ===
@@ -25,7 +26,7 @@ st.title("📊 HNW Investment Matrix (Comprehensive & Editable)")
 try:
     # === Load and clean Excel ===
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
-    df = df.applymap(sanitize_string)  # 👈 Sanitize strings after reading Excel
+    df = df.applymap(sanitize_string)
 
     # === Editable Table ===
     st.subheader("🔧 Edit Investment Data")
@@ -42,7 +43,6 @@ try:
     col4.metric("Avg Liquidity", f"{edited_df['Liquidity (1–10)'].mean():.2f}")
     col5.metric("Avg Volatility", f"{edited_df['Volatility (1–10)'].mean():.2f}")
     col6.metric("Avg Fees (%)", f"{edited_df['Fees (%)'].mean():.2f}%")
-
     col7, _ = st.columns(2)
     col7.metric("💰 Avg Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
 
@@ -117,36 +117,19 @@ try:
         prs.save(ppt_file)
         return ppt_file
 
-    # === PDF Generation (Unicode-safe) ===
-    def create_pdf(df):
+    # === Word Document Generation ===
+    def create_docx(df):
         df = df.applymap(sanitize_string)
         avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
 
-        pdf = FPDF()
-        pdf.add_page()
+        doc = Document()
+        doc.add_heading("HNW Investment Summary", 0)
 
-        font_path = "fonts/DejaVuSans.ttf"
-        if not os.path.exists(font_path):
-            raise FileNotFoundError("⚠️ 'DejaVuSans.ttf' not found in /fonts. Please download it and place it in a 'fonts' folder.")
-
-        pdf.add_font("DejaVu", "", font_path, uni=True)
-        pdf.set_font("DejaVu", "", 16)
-        pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
-        pdf.ln(10)
-
-        pdf.set_font("DejaVu", "", 12)
-        pdf.cell(0, 10, "Portfolio Averages:", ln=True)
-
-        # Debug-safe loop
+        doc.add_heading("Portfolio Averages", level=1)
         for k, v in avg.items():
-            try:
-                key_str = str(k)
-                val_str = str(v)
-                pdf.cell(0, 10, f"{key_str}: {val_str}", ln=True)
-            except Exception as e:
-                st.error(f"Error generating PDF line for {k}: {v} — {e}")
-                raise e
+            doc.add_paragraph(f"{k}: {v}")
 
+        # Save chart image
         chart_file = "streamlit_chart.png"
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
@@ -155,14 +138,12 @@ try:
         plt.savefig(chart_file)
         plt.close()
 
-        pdf.image(chart_file, w=170)
-        pdf_file = "HNW_Investment_Summary.pdf"
-        pdf.output(pdf_file)
-        return pdf_file
+        doc.add_heading("Expected Return Chart", level=1)
+        doc.add_picture(chart_file, width=DocxInches(6.5))
 
-    # === Debug print of filtered_df dtypes to help troubleshoot PDF issues ===
-    st.write("Filtered DataFrame column types (for debugging):")
-    st.write(filtered_df.dtypes)
+        docx_file = "HNW_Investment_Summary.docx"
+        doc.save(docx_file)
+        return docx_file
 
     # === Buttons ===
     col1, col2 = st.columns(2)
@@ -173,13 +154,13 @@ try:
                 st.download_button("Download PowerPoint", f, file_name=ppt_file)
 
     with col2:
-        if st.button("📄 Generate PDF Summary"):
+        if st.button("📝 Generate Word Report"):
             try:
-                pdf_file = create_pdf(filtered_df)
-                with open(pdf_file, "rb") as f:
-                    st.download_button("Download PDF", f, file_name=pdf_file)
+                docx_file = create_docx(filtered_df)
+                with open(docx_file, "rb") as f:
+                    st.download_button("Download Word Report", f, file_name=docx_file)
             except Exception as e:
-                st.error(f"Error creating PDF: {e}")
+                st.error(f"Error creating Word document: {e}")
 
 except Exception as e:
     st.error(f"⚠️ Error loading Excel file: {e}")
