@@ -7,7 +7,7 @@ from docx import Document
 from docx.shared import Inches as DocxInches
 import os
 
-# === Styling ===
+# === Page & Custom CSS ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
     <style>
@@ -16,35 +16,39 @@ st.markdown("""
         background-color: white;
         color: black;
     }
-    /* Headers with dark blue border around each letter */
     h1, h2, h3, .stMarkdown {
         color: black;
         font-weight: 600;
-        /* text stroke for letter border */
-        -webkit-text-stroke: 1.5px #003366;
-        text-stroke: 1.5px #003366;
     }
-    .title-box {
-        border: 7px solid #003366;
-        padding: 1em;
-        border-radius: 5px;
-        background-color: #B0C4DE;
+    .title-box h1 {
+        font-size: 28px;
+        font-weight: 600;
+        color: black;
         text-align: center;
-        margin-bottom: 1rem;
+        text-shadow:
+            -1px  0 #003366,
+             1px  0 #003366,
+             0  1px #003366,
+             0 -1px #003366;
     }
-    /* Buttons */
+    .subtitle {
+        color: #003366;
+        font-size: 16px;
+        font-stretch: extra-condensed;
+        text-align: center;
+        margin-top: -10px;
+        margin-bottom: 30px;
+    }
     .stButton > button {
         background-color: #003366;
         color: white;
         border-radius: 6px;
         padding: 0.5em 1em;
         border: none;
-        font-weight: 600;
     }
     .stButton > button:hover {
         background-color: #0055a5;
     }
-    /* Metrics styling */
     .stMetric {
         background-color: #f0f8ff;
         padding: 1em;
@@ -53,13 +57,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Title with border box and smaller font size
-st.markdown('<div class="title-box"><h1 style="font-size: 28px; margin:0;">Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
+# === Title and Subtitle ===
+st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
 
-# Subtitle with dark blue color, narrower font weight, smaller size
-st.markdown('<h3 style="color: #003366; font-weight: 300; font-size: 16px; margin-top: -1rem;">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</h3>', unsafe_allow_html=True)
-
-# === String sanitizer ===
+# === String Sanitizer ===
 def sanitize_string(s):
     if isinstance(s, str):
         return (
@@ -82,17 +84,15 @@ try:
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.divider()
 
-    # === Metrics ===
+    # === Metrics in One Row ===
     st.subheader("Portfolio Averages and Totals")
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
     col2.metric("Avg Risk (1–10)", f"{edited_df['Risk Level (1-10)'].mean():.2f}")
     col3.metric("Avg Cap Rate (%)", f"{edited_df['Cap Rate (%)'].mean():.2f}%")
     col4.metric("Avg Liquidity", f"{edited_df['Liquidity (1–10)'].mean():.2f}")
     col5.metric("Avg Volatility", f"{edited_df['Volatility (1–10)'].mean():.2f}")
     col6.metric("Avg Fees (%)", f"{edited_df['Fees (%)'].mean():.2f}%")
-
-    col7, _ = st.columns(2)
     col7.metric("Avg Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
 
     st.divider()
