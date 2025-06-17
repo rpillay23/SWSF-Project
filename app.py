@@ -25,7 +25,7 @@ st.title("📊 HNW Investment Matrix (Comprehensive & Editable)")
 try:
     # === Load and clean Excel ===
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
-    df = df.applymap(sanitize_string)  # 👈 Sanitize strings
+    df = df.applymap(sanitize_string)  # 👈 Sanitize strings after reading Excel
 
     # === Editable Table ===
     st.subheader("🔧 Edit Investment Data")
@@ -42,6 +42,7 @@ try:
     col4.metric("Avg Liquidity", f"{edited_df['Liquidity (1–10)'].mean():.2f}")
     col5.metric("Avg Volatility", f"{edited_df['Volatility (1–10)'].mean():.2f}")
     col6.metric("Avg Fees (%)", f"{edited_df['Fees (%)'].mean():.2f}%")
+
     col7, _ = st.columns(2)
     col7.metric("💰 Avg Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
 
@@ -66,6 +67,7 @@ try:
     st.subheader("🎯 Filter by Time Horizon, Inflation Hedge, or Min Investment")
     time_options = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
     hedge_options = ["All", "Yes", "No"]
+
     time_filter = st.selectbox("Select Time Horizon", time_options)
     hedge_filter = st.selectbox("Inflation Hedge?", hedge_options)
     min_inv_filter = st.slider("Minimum Investment ($)",
@@ -135,7 +137,7 @@ try:
         pdf.set_font("DejaVu", "", 12)
         pdf.cell(0, 10, "Portfolio Averages:", ln=True)
         for k, v in avg.items():
-            pdf.cell(0, 10, f"{k}: {v}", ln=True)  # safe string formatting here
+            pdf.cell(0, 10, f"{str(k)}: {str(v)}", ln=True)
 
         chart_file = "streamlit_chart.png"
         fig, ax = plt.subplots(figsize=(10, 4))
