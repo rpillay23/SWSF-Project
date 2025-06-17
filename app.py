@@ -25,7 +25,7 @@ st.title("📊 HNW Investment Matrix (Comprehensive & Editable)")
 try:
     # === Load and clean Excel ===
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
-    df = df.applymap(sanitize_string)  # 👈 Sanitize strings after reading Excel
+    df = df.applymap(sanitize_string)  # 👈 Sanitize strings
 
     # === Editable Table ===
     st.subheader("🔧 Edit Investment Data")
@@ -42,7 +42,6 @@ try:
     col4.metric("Avg Liquidity", f"{edited_df['Liquidity (1–10)'].mean():.2f}")
     col5.metric("Avg Volatility", f"{edited_df['Volatility (1–10)'].mean():.2f}")
     col6.metric("Avg Fees (%)", f"{edited_df['Fees (%)'].mean():.2f}%")
-
     col7, _ = st.columns(2)
     col7.metric("💰 Avg Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
 
@@ -67,7 +66,6 @@ try:
     st.subheader("🎯 Filter by Time Horizon, Inflation Hedge, or Min Investment")
     time_options = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
     hedge_options = ["All", "Yes", "No"]
-
     time_filter = st.selectbox("Select Time Horizon", time_options)
     hedge_filter = st.selectbox("Inflation Hedge?", hedge_options)
     min_inv_filter = st.slider("Minimum Investment ($)",
@@ -75,7 +73,6 @@ try:
                                int(edited_df["Minimum Investment ($)"].max()),
                                int(edited_df["Minimum Investment ($)"].min()))
 
-    # === Apply Filters ===
     filtered_df = edited_df.copy()
     if time_filter != "All":
         filtered_df = filtered_df[filtered_df["Time Horizon (Short/Medium/Long)"] == time_filter]
@@ -90,7 +87,7 @@ try:
     st.divider()
     st.subheader("📥 Generate Reports")
 
-    # === File Generation Functions ===
+    # === PowerPoint Generation ===
     def create_ppt(df):
         prs = Presentation()
         slide = prs.slides.add_slide(prs.slide_layouts[0])
@@ -118,43 +115,41 @@ try:
         prs.save(ppt_file)
         return ppt_file
 
+    # === PDF Generation (Unicode-safe) ===
     def create_pdf(df):
-    df = df.applymap(sanitize_string)
+        df = df.applymap(sanitize_string)
+        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
 
-    avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+        pdf = FPDF()
+        pdf.add_page()
 
-    pdf = FPDF()
-    pdf.add_page()
+        # Load Unicode-compatible font
+        font_path = "fonts/DejaVuSans.ttf"
+        if not os.path.exists(font_path):
+            raise FileNotFoundError("⚠️ 'DejaVuSans.ttf' not found in /fonts. Download it and place it in a 'fonts' folder.")
 
-    # Add a Unicode-compatible font (DejaVu)
-    font_path = "fonts/DejaVuSans.ttf"
-    if not os.path.exists(font_path):
-        raise FileNotFoundError("DejaVuSans.ttf not found. Please place it in a 'fonts' folder.")
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.set_font("DejaVu", "", 16)
+        pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
+        pdf.ln(10)
 
-    pdf.add_font("DejaVu", "", font_path, uni=True)
-    pdf.set_font("DejaVu", "", 14)
-    pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
-    pdf.ln(10)
+        pdf.set_font("DejaVu", "", 12)
+        pdf.cell(0, 10, "Portfolio Averages:", ln=True)
+        for k, v in avg.items():
+            pdf.cell(0, 10, f"{k}: {v}", ln=True)
 
-    pdf.set_font("DejaVu", "", 12)
-    pdf.cell(0, 10, "Portfolio Averages:", ln=True)
-    for k, v in avg.items():
-        pdf.cell(0, 10, f"{k}: {v}", ln=True)
+        chart_file = "streamlit_chart.png"
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(chart_file)
+        plt.close()
 
-    # Save chart image
-    chart_file = "streamlit_chart.png"
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
-    plt.xticks(rotation=90)
-    plt.tight_layout()
-    plt.savefig(chart_file)
-    plt.close()
-
-    pdf.image(chart_file, w=170)
-
-    pdf_file = "HNW_Investment_Summary.pdf"
-    pdf.output(pdf_file)
-    return pdf_file
+        pdf.image(chart_file, w=170)
+        pdf_file = "HNW_Investment_Summary.pdf"
+        pdf.output(pdf_file)
+        return pdf_file
 
     # === Buttons ===
     col1, col2 = st.columns(2)
@@ -166,9 +161,12 @@ try:
 
     with col2:
         if st.button("📄 Generate PDF Summary"):
-            pdf_file = create_pdf(filtered_df)
-            with open(pdf_file, "rb") as f:
-                st.download_button("Download PDF", f, file_name=pdf_file)
+            try:
+                pdf_file = create_pdf(filtered_df)
+                with open(pdf_file, "rb") as f:
+                    st.download_button("Download PDF", f, file_name=pdf_file)
+            except Exception as e:
+                st.error(f"Error creating PDF: {e}")
 
 except Exception as e:
-    st.error(f"⚠️ Error loading Excel f
+    st.error(f"⚠️ Error loading Excel file: {e}")
