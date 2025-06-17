@@ -76,7 +76,20 @@ try:
     st.divider()
     st.subheader("📥 Generate Reports")
 
-    # === File Generation Functions ===
+    # === Utility to sanitize strings for PDF
+    def sanitize_string(s):
+        if isinstance(s, str):
+            return (
+                s.replace("–", "-")
+                 .replace("’", "'")
+                 .replace("“", '"')
+                 .replace("”", '"')
+                 .replace("•", "-")
+                 .replace("©", "(c)")
+            )
+        return s
+
+    # === PowerPoint Generator
     def create_ppt(df):
         prs = Presentation()
         slide = prs.slides.add_slide(prs.slide_layouts[0])
@@ -104,14 +117,18 @@ try:
         prs.save(ppt_file)
         return ppt_file
 
+    # === PDF Generator
     def create_pdf(df):
+        df = df.applymap(sanitize_string)
         avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Arial", "B", 16)
         pdf.cell(0, 10, "HNW Investment Summary", ln=True, align="C")
         pdf.set_font("Arial", size=12)
         pdf.ln(10)
+
         pdf.cell(0, 10, "Portfolio Averages:", ln=True)
         for k, v in avg.items():
             pdf.cell(0, 10, f"{k}: {v}", ln=True)
@@ -129,6 +146,7 @@ try:
         pdf.output(pdf_file)
         return pdf_file
 
+    # === Interactive Buttons
     col1, col2 = st.columns(2)
 
     with col1:
