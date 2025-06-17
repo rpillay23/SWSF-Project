@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import yfinance as yf
 from pptx import Presentation
 from pptx.util import Inches
 from docx import Document
@@ -72,6 +73,35 @@ st.markdown("""
 # === Title & Subtitle ===
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
+
+# === Fetch Real-Time S&P 500 Data ===
+@st.cache_data
+def fetch_sp500_data():
+    sp500 = yf.Ticker('^GSPC')
+    hist = sp500.history(period='1d')
+    return hist
+
+sp500_data = fetch_sp500_data()
+
+# === Display S&P 500 Metrics ===
+latest_close = sp500_data['Close'].iloc[-1]
+previous_close = sp500_data['Close'].iloc[-2]
+daily_change = latest_close - previous_close
+percent_change = (daily_change / previous_close) * 100
+
+st.subheader("S&P 500 Real-Time Data")
+col1, col2 = st.columns(2)
+col1.metric("Latest Close", f"${latest_close:,.2f}")
+col2.metric("Daily Change", f"${daily_change:,.2f} ({percent_change:+.2f}%)")
+
+# === Historical Returns Chart ===
+st.subheader("S&P 500 Historical Returns (Past Year)")
+fig, ax = plt.subplots(figsize=(10, 6))
+sp500_data['Close'].plot(ax=ax)
+ax.set_title("S&P 500 Closing Price Over the Last Year")
+ax.set_xlabel("Date")
+ax.set_ylabel("Price (USD)")
+st.pyplot(fig)
 
 # === Helper: Clean Unicode Characters ===
 def sanitize_string(s):
