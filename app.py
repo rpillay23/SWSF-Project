@@ -94,8 +94,8 @@ def get_sp500_data():
     hist.reset_index(inplace=True)
     return hist
 
-# === Real-Time Market Data Section ===
-st.subheader("Real-Time Market Data: S&P 500")
+# === Sidebar: Real-Time Market Data ===
+st.sidebar.header("Real-Time Market Data: S&P 500")
 
 sp500_data = get_sp500_data()
 if not sp500_data.empty:
@@ -106,18 +106,20 @@ if not sp500_data.empty:
     change = latest_close - prev_close
     pct_change = (change / prev_close) * 100
 
-    st.metric("Latest Close", f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
+    st.sidebar.metric("Latest Close", f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
 
-    fig, ax = plt.subplots(figsize=(10, 4))
+    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
     ax.plot(sp500_data['Date'], sp500_data['Close'], label='S&P 500 Close', color='#003366')
-    ax.set_xlabel("Date")
+    ax.set_xlabel("")
     ax.set_ylabel("Price ($)")
-    ax.set_title("S&P 500 Last 30 Days")
+    ax.set_title("")
     ax.grid(True, linestyle='--', alpha=0.5)
-    plt.xticks(rotation=45)
-    st.pyplot(fig)
+    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
+    plt.tight_layout()
+    st.sidebar.pyplot(fig)
 else:
-    st.warning("Failed to fetch S&P 500 data.")
+    st.sidebar.warning("Failed to fetch S&P 500 data.")
 
 st.divider()
 
