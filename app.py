@@ -13,7 +13,7 @@ st.markdown("""
     <style>
     html, body, [class*="css"] {
         font-family: 'Helvetica Neue', sans-serif;
-        background-color: white;
+        background-color: light-blue;
         color: black;
     }
     h1, h2, h3, .stMarkdown {
