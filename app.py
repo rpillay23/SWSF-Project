@@ -7,19 +7,99 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
 <style>
+/* Increase top padding to keep space for fixed header */
 .css-1d391kg { padding-top:110px !important; }
-.app-header { background:#111; color:white; padding:8px 20px; position:fixed;top:0;left:0;width:100vw;z-index:999;}
-.app-header h1{margin:0;font-size:20px;font-weight:700;}
-.app-header p{margin:2px 0 0;color:#f44336;font-size:11px;}
-.stButton > button{background:#111;color:#f44336;border:2px solid #f44336;border-radius:4px;padding:0.3em 0.8em;font-weight:700;font-size:12px;}
-.stButton > button:hover{background:#f44336;color:#111;}
-main { margin-right:300px !important; padding:0 20px 20px 20px; }
-[data-testid="stDataFrame"] { font-size:12px; }
+
+/* Fixed top header with black background */
+.app-header {
+    background:#111; 
+    color:white; 
+    padding:8px 20px; 
+    position:fixed;
+    top:0;
+    left:0;
+    width:100vw;
+    z-index:999;
+}
+.app-header h1 {
+    margin:0;
+    font-size:20px;
+    font-weight:700;
+}
+.app-header p {
+    margin:2px 0 0;
+    color:#f44336;
+    font-size:11px;
+}
+
+/* Left fixed sidebar for market indices */
+.left-sidebar {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    width: 280px;
+    height: calc(100vh - 80px);
+    background: #111;
+    color: white;
+    padding: 15px;
+    overflow-y: auto;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+    z-index: 998;
+    font-family: inherit;
+}
+
+/* Main content shifted right to avoid overlap */
+.main-content {
+    margin-left: 300px !important;  /* leave 20px extra space */
+    padding: 0 20px 20px 20px;
+}
+
+/* Style for market index items inside sidebar */
+.left-sidebar .index-name {
+    font-size: 13px;
+    font-weight: 700;
+}
+.left-sidebar .index-value {
+    font-size: 18px;
+    margin-top: 2px;
+}
+.left-sidebar .index-delta {
+    font-size: 13px;
+    margin-top: 2px;
+}
+.left-sidebar hr {
+    border-color: #444;
+    margin: 8px 0;
+}
+
+/* Buttons styling */
+.stButton > button {
+    background:#111;
+    color:#f44336;
+    border:2px solid #f44336;
+    border-radius:4px;
+    padding:0.3em 0.8em;
+    font-weight:700;
+    font-size:12px;
+}
+.stButton > button:hover {
+    background:#f44336;
+    color:#111;
+}
+
+/* Smaller font size for dataframes */
+[data-testid="stDataFrame"] {
+    font-size:12px;
+}
 </style>
-<div class="app-header"><h1>Automated Investment Matrix</h1><p>Portfolio Analysis Platform with Real-Time Data</p></div>
+
+<div class="app-header">
+    <h1>Automated Investment Matrix</h1>
+    <p>Portfolio Analysis Platform with Real-Time Data</p>
+</div>
 """, unsafe_allow_html=True)
 
-# --- Right Fixed Index Panel ---
+# --- Market Indices Sidebar on Left ---
 @st.cache_data(ttl=300)
 def get_price(ticker):
     hist = yf.Ticker(ticker).history(period="2d")['Close']
@@ -34,40 +114,25 @@ prices = {}
 for t, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
     prices[name] = get_price(t)
 
-# Market indices container with black background on right fixed margin
-st.markdown(
-    """
-    <div style="
-        position: fixed;
-        top: 80px;
-        right: 0;
-        width: 280px;
-        background: #111;
-        color: white;
-        height: calc(100vh - 80px);
-        padding: 15px;
-        overflow-y: auto;
-        box-shadow: -2px 0 5px rgba(0,0,0,0.4);
-        z-index: 998;
-        font-family: inherit;
-    ">
-    <h2 style="color:#f44336; margin-bottom:10px;">Market Indices</h2>
-    """
-    , unsafe_allow_html=True)
+# Render the sidebar container
+st.markdown('<div class="left-sidebar">', unsafe_allow_html=True)
+st.markdown('<h2 style="color:#f44336; margin-bottom:10px;">Market Indices</h2>', unsafe_allow_html=True)
 
 for name, (val, delta) in prices.items():
     color = "#4caf50" if delta.startswith("+") else "#f44336"
-    st.markdown(
-        f"""
-        <div style="margin-bottom: 15px;">
-            <div style="font-size:13px; font-weight:700;">{name}</div>
-            <div style="font-size:18px; margin-top: 2px;">{val}</div>
-            <div style="font-size:13px; color:{color}; margin-top: 2px;">{delta}</div>
-            <hr style="border-color:#444; margin: 8px 0;">
+    st.markdown(f'''
+        <div>
+            <div class="index-name">{name}</div>
+            <div class="index-value">{val}</div>
+            <div class="index-delta" style="color:{color};">{delta}</div>
+            <hr>
         </div>
-        """, unsafe_allow_html=True)
+    ''', unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)  # close container div
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Main content container with margin-left ---
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
 # --- Load Data ---
 @st.cache_data(ttl=600)
@@ -187,3 +252,5 @@ with b1:
 with b2:
     if st.button("📥 Download Word"):
         st.success("Word export placeholder")
+
+st.markdown('</div>', unsafe_allow_html=True)  # close main-content div
