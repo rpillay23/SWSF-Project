@@ -114,7 +114,7 @@ def load_data():
 df = load_data()
 
 # --- 1. SELECT INVESTMENTS ---
-st.subheader("Select Investment Types")
+st.subheader("Investment Portfolio Composition")
 if "Category" not in df.columns:
     st.error("Missing Category column in data.")
     st.stop()
@@ -122,12 +122,12 @@ types = sorted(df["Category"].dropna().unique())
 sel = st.multiselect("Choose investment categories:", types, default=types)
 
 # --- 2. EDITABLE DATA ---
-st.subheader("Editable Investment Data")
+st.subheader("Configure Investment Data")
 filtered_df = df[df["Category"].isin(sel)].copy()
 edited = st.data_editor(filtered_df, use_container_width=True, num_rows="dynamic")
 
 # --- 3. PORTFOLIO METRICS ---
-st.subheader("Portfolio Averages")
+st.subheader("Portfolio Averages and Returns")
 def mean_safe(df, col): return f"{df[col].mean():.2f}" if col in df.columns and not df.empty else "N/A"
 
 metrics = [
@@ -146,7 +146,7 @@ for (lbl, colname), c in zip(metrics, cols):
     c.metric(lbl, f"{val}{suffix}" if val != "N/A" else val)
 
 # --- 4. VISUAL INSIGHTS ---
-st.subheader("Visual Insights")
+st.subheader("Portflio Graphs and Trends")
 vc = st.columns(4)
 
 def make_bar(x, y):
@@ -185,7 +185,7 @@ for slot, cfg in zip(vc, vis):
                 ax.tick_params(labelsize=6); fig.tight_layout(); slot.pyplot(fig)
 
 # --- 5. FILTER -->
-st.subheader("Portfolio Constraints")
+st.subheader("portfolio Choices and Constraints")
 min_i = st.slider("Min Investment ($)", 0, int(edited["Minimum Investment ($)"].max()), 0, step=1000) \
     if "Minimum Investment ($)" in edited else 0
 min_r = st.slider("Min Return (%)", 0.0, float(edited["Expected Return (%)"].max()), 0.0, step=0.1) \
@@ -201,11 +201,11 @@ if "Risk Level (1-10)" in f: f = f[f["Risk Level (1-10)"] <= max_r]
 if hedge and "Inflation Hedge (Yes/No)" in f: f = f[f["Inflation Hedge (Yes/No)"] == "Yes"]
 
 # --- 6. FILTERED TABLE ---
-st.subheader(f"Filtered Investments ({len(f)})")
+st.subheader(f"Filtered Investments")
 st.dataframe(f, height=220)
 
 # --- 7. EXPORT REPORTS ---
-st.subheader("Export Reports")
+st.subheader("Export Data and Reports")
 b1, b2 = st.columns(2)
 with b1:
     if st.button("📤 Download PowerPoint"):
