@@ -38,7 +38,7 @@ st.markdown("""
     display:flex;
     gap:20px;
     margin-top:20px;
-    margin-bottom:10px;
+    margin-bottom:1px;
     justify-content:right;
 }
 .index-box {
