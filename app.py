@@ -34,7 +34,7 @@ main { padding: 0 20px 20px 20px; }
 
 /* Horizontal market indices styling */
 .market-indices {
-    margin-top: 100px;
+    margin-top: 40px;
     margin-bottom: 25px;
     display: flex;
     justify-content: flex-start;
