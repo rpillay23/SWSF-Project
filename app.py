@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-import yfinance as yf
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
@@ -13,43 +12,6 @@ st.markdown("""
 header > div {
     background-color: #111 !important;
     color: white !important;
-}
-
-/* Sidebar background */
-[data-testid="stSidebar"] {
-    background-color: #111;
-    color: white;
-    padding: 1rem;
-}
-
-/* Sidebar headers */
-[data-testid="stSidebar"] h2 {
-    color: #f44336;
-    font-weight: 700;
-}
-
-/* Sidebar text color */
-[data-testid="stSidebar"] p, 
-[data-testid="stSidebar"] label {
-    color: white;
-    font-size: 14px;
-}
-
-/* Buttons */
-.stButton > button {
-    background-color: #111;
-    color: #f44336;
-    border-radius: 6px;
-    padding: 0.4em 1em;
-    border: 2px solid #f44336;
-    font-weight: 700;
-    font-size: 14px;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-.stButton > button:hover {
-    background-color: #f44336;
-    color: #111;
-    border: 2px solid #f44336;
 }
 
 /* Main content area padding */
@@ -81,6 +43,23 @@ header > div {
     font-weight: 500;
 }
 
+/* Buttons */
+.stButton > button {
+    background-color: #111;
+    color: #f44336;
+    border-radius: 6px;
+    padding: 0.4em 1em;
+    border: 2px solid #f44336;
+    font-weight: 700;
+    font-size: 14px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+.stButton > button:hover {
+    background-color: #f44336;
+    color: #111;
+    border: 2px solid #f44336;
+}
+
 /* Metrics font size */
 .stMetric > div {
     font-size: 14px !important;
@@ -107,97 +86,26 @@ header > div {
 </div>
 """, unsafe_allow_html=True)
 
-# --- FUNCTIONS ---
-
-@st.cache_data(ttl=600)
-def get_index_data(ticker):
-    try:
-        index = yf.Ticker(ticker)
-        hist = index.history(period="1mo")
-        hist.reset_index(inplace=True)
-        return hist
-    except Exception:
-        return pd.DataFrame()
-
-def format_market_metric(latest, prev):
-    latest_close = latest['Close']
-    prev_close = prev['Close']
-    change = latest_close - prev_close
-    pct_change = (change / prev_close) * 100
-    return latest_close, change, pct_change
-
-def plot_mini_line_chart(data):
-    fig, ax = plt.subplots(figsize=(3, 1))
-    ax.plot(data['Date'], data['Close'], color='#f44336', linewidth=1.8)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    plt.tight_layout()
-    st.pyplot(fig, use_container_width=True)
-
-def sanitize_string(s):
-    if isinstance(s, str):
-        return (
-            s.strip()
-             .replace("–", "-")
-             .replace("’", "'")
-             .replace("“", '"')
-             .replace("”", '"')
-             .replace("•", "-")
-             .replace("©", "(c)")
-        )
-    return s
-
 # --- LOAD DATA ---
 
 try:
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
-    # Clean column names and data strings
     df.columns = [col.strip() for col in df.columns]
-    df = df.applymap(sanitize_string)
 except Exception as e:
     st.error(f"Error loading data file: {e}")
     st.stop()
-
-# Check what columns we have
-# st.write(df.columns)
-
-# --- SIDEBAR: Real-Time Market Indices ---
-
-st.sidebar.markdown("## Real-Time Market Indices")
-
-for ticker, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
-    data = get_index_data(ticker)
-    if data.empty:
-        st.sidebar.markdown(f"**{name}**: Data unavailable")
-        continue
-
-    latest = data.iloc[-1]
-    prev = data.iloc[-2]
-    latest_close, change, pct_change = format_market_metric(latest, prev)
-
-    delta_color = "#4caf50" if change >= 0 else "#f44336"
-    st.sidebar.markdown(f"### {name}")
-    st.sidebar.markdown(f"<span style='font-size:18px'>${latest_close:,.2f}</span><br>"
-                        f"<span style='color:{delta_color}; font-weight:bold;'>{change:+.2f} ({pct_change:+.2f}%)</span>",
-                        unsafe_allow_html=True)
-    plot_mini_line_chart(data)
 
 # --- MAIN CONTENT ---
 
 st.header("Investment Generator")
 
-# Ensure column names exist
 cat_col = "Category"
 min_inv_col = "Minimum Investment ($)"
 exp_ret_col = "Expected Return (%)"
 risk_col = "Risk Level (1-10)"
-investment_col = "Investment"  # Use the exact column from your file
+investment_col = "Investment"  # fallback if not found in df
 
-# Defensive check for investment_col presence, fallback to first text-like column
 if investment_col not in df.columns:
-    # Try to guess column for investments, e.g. first string column
     for col in df.columns:
         if df[col].dtype == object:
             investment_col = col
