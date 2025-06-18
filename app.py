@@ -36,9 +36,9 @@ st.markdown("""
 }
 .market-indices {
     display:flex;
-    gap:30px;
+    gap:20px;
     margin-top:20px;
-    margin-bottom:20px;
+    margin-bottom:10px;
     justify-content:right;
 }
 .index-box {
