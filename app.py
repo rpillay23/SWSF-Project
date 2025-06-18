@@ -54,7 +54,7 @@ with left_col:
 # --- Main Content ---
 with main_col:
     st.markdown('<div style="text-align:center;"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
-    st.markdown("A modular analysis tool for building smart portfolios with real-time data.")
+    st.markdown("Modular Analysis Tool for Building Smart Portfolios with Real-Time Data Designed for Portfolio Management for Finance Professionals")
 
     # --- Load Data ---
     try:
