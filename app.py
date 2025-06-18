@@ -20,7 +20,7 @@ st.markdown("""
     position:fixed;
     top:0;
     left:0;
-    width:80vw;
+    width:100vw;
     z-index:1000;
     font-family:'Helvetica Neue', Helvetica, sans-serif;
 }
@@ -37,7 +37,7 @@ st.markdown("""
 .market-indices {
     display:flex;
     gap:20px;
-    margin-top:80px;
+    margin-top:40px;
     margin-bottom:20px;
     justify-content:center;
 }
