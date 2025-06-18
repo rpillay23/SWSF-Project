@@ -58,10 +58,12 @@ with left_col:
 # --- Main Panel: Core App ---
 with main_col:
     st.markdown("<h1 style='text-align:center;'>Automated Investment Matrix</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;'>Modular Investment Analysis Platform with Real Market Data for Portfolio Optimization and Financial Advisory.Designed for portfolio managers and finance professionals to generate, analyze, and optimize investment portfolios using real-time data.
-
-</p>", unsafe_allow_html=True)
-
+    st.markdown("""
+    <p style='text-align:center;'>
+    Modular Investment Analysis Platform with Real Market Data for Portfolio Optimization and Financial Advisory.
+    Designed for portfolio managers and finance professionals to generate, analyze, and optimize investment portfolios using real-time data.
+    </p>
+""", unsafe_allow_html=True)
     # --- Load / Sanitize Data ---
     try:
         df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
