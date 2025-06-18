@@ -7,7 +7,7 @@ from docx import Document
 from docx.shared import Inches as DocxInches
 import yfinance as yf
 
-# === Page Configuration and Styling ===
+# === Page Config and Styling ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 
 st.markdown("""
@@ -18,9 +18,11 @@ st.markdown("""
         color: #003366;
     }
 
-    h1, h2, h3, .stMarkdown {
+    h1, h2, h3, .stMarkdown, p {
         color: #003366;
         font-weight: bold;
+        border: none !important;
+        outline: none !important;
     }
 
     .title-box {
@@ -42,7 +44,6 @@ st.markdown("""
         font-size: 16px;
         color: #003366;
         text-align: center;
-        font-stretch: condensed;
         margin-bottom: 30px;
     }
 
@@ -73,7 +74,7 @@ st.markdown("""
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
 
-# === Helper: Clean Unicode Characters ===
+# === Helper ===
 def sanitize_string(s):
     if isinstance(s, str):
         return (
@@ -86,7 +87,7 @@ def sanitize_string(s):
         )
     return s
 
-# === Cache yfinance data fetch for 10 minutes ===
+# === Real-Time S&P 500 Data ===
 @st.cache_data(ttl=600)
 def get_sp500_data():
     sp500 = yf.Ticker("^GSPC")
@@ -94,10 +95,10 @@ def get_sp500_data():
     hist.reset_index(inplace=True)
     return hist
 
-# === Sidebar: Real-Time Market Data ===
-st.sidebar.header("Real-Time Market Data: S&P 500")
-
+# === Sidebar: S&P 500 Tracker ===
+st.sidebar.header("Real-Time Market Data")
 sp500_data = get_sp500_data()
+
 if not sp500_data.empty:
     latest = sp500_data.iloc[-1]
     prev = sp500_data.iloc[-2]
@@ -106,20 +107,20 @@ if not sp500_data.empty:
     change = latest_close - prev_close
     pct_change = (change / prev_close) * 100
 
-    st.sidebar.metric("Latest Close", f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
+    st.sidebar.metric("S&P 500", f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
 
-    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
-    ax.plot(sp500_data['Date'], sp500_data['Close'], label='S&P 500 Close', color='#003366')
+    fig, ax = plt.subplots(figsize=(3.5, 2))
+    ax.plot(sp500_data['Date'], sp500_data['Close'], color='#003366')
     ax.set_xlabel("")
-    ax.set_ylabel("Price ($)")
+    ax.set_ylabel("Price")
     ax.set_title("")
-    ax.grid(True, linestyle='--', alpha=0.5)
-    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='x', labelsize=8, rotation=45)
     ax.tick_params(axis='y', labelsize=8)
+    ax.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
     st.sidebar.pyplot(fig)
 else:
-    st.sidebar.warning("Failed to fetch S&P 500 data.")
+    st.sidebar.warning("⚠️ Failed to fetch S&P 500 data.")
 
 st.divider()
 
@@ -133,7 +134,7 @@ try:
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.divider()
 
-    # === Portfolio Metrics: 7 columns inline ===
+    # === Metrics ===
     st.subheader("Portfolio Averages and Totals")
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
@@ -182,7 +183,7 @@ try:
     st.dataframe(filtered_df, use_container_width=True)
     st.divider()
 
-    # === Report Generators ===
+    # === Reports ===
     st.subheader("Generate Reports")
 
     def create_ppt(df):
@@ -250,3 +251,4 @@ try:
 
 except Exception as e:
     st.error(f"⚠️ Error loading Excel file: {e}")
+
