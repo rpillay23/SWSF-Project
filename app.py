@@ -202,4 +202,4 @@ with main_col:
         if st.button("Generate Word Document"):
             docx_path = build_doc(filtered)
             with open(docx_path, "rb") as fd:
-                st.download_button("Download DOCX", fd, file
+                st.download_button("Download DOCX", fd, file)
