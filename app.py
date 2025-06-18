@@ -39,7 +39,7 @@ st.markdown("""
     gap:30px;
     margin-top:20px;
     margin-bottom:20px;
-    justify-content:center;
+    justify-content:right;
 }
 .index-box {
     background:#111;
