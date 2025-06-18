@@ -5,9 +5,9 @@ from pptx import Presentation
 from pptx.util import Inches
 from docx import Document
 from docx.shared import Inches as DocxInches
-import yfinance as yf
+import requests
 
-# === Page Config and Styling ===
+# === Page Configuration and Styling ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 
 st.markdown("""
@@ -18,11 +18,9 @@ st.markdown("""
         color: #003366;
     }
 
-    h1, h2, h3, .stMarkdown, p {
+    h1, h2, h3, .stMarkdown {
         color: #003366;
         font-weight: bold;
-        border: none !important;
-        outline: none !important;
     }
 
     .title-box {
@@ -44,6 +42,7 @@ st.markdown("""
         font-size: 16px;
         color: #003366;
         text-align: center;
+        font-stretch: condensed;
         margin-bottom: 30px;
     }
 
@@ -74,7 +73,7 @@ st.markdown("""
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
 
-# === Helper ===
+# === Helper: Clean Unicode Characters ===
 def sanitize_string(s):
     if isinstance(s, str):
         return (
@@ -87,40 +86,29 @@ def sanitize_string(s):
         )
     return s
 
-# === Real-Time S&P 500 Data ===
-@st.cache_data(ttl=600)
-def get_sp500_data():
-    sp500 = yf.Ticker("^GSPC")
-    hist = sp500.history(period="1mo")
-    hist.reset_index(inplace=True)
-    return hist
+# === Fetch Real-Time Data from Financial Modeling Prep API ===
+def fetch_real_time_data():
+    tickers = ["AAPL", "AMZN", "GOOGL", "META", "NVDA", "TSLA", "^GSPC", "^IXIC", "^DJI"]
+    url = f"https://financialmodelingprep.com/api/v3/quote/{','.join(tickers)}?apikey=YOUR_API_KEY"
+    response = requests.get(url)
+    return response.json()
 
-# === Sidebar: S&P 500 Tracker ===
+# === Sidebar: Real-Time Market Data ===
 st.sidebar.header("Real-Time Market Data")
-sp500_data = get_sp500_data()
 
-if not sp500_data.empty:
-    latest = sp500_data.iloc[-1]
-    prev = sp500_data.iloc[-2]
-    latest_close = latest['Close']
-    prev_close = prev['Close']
-    change = latest_close - prev_close
-    pct_change = (change / prev_close) * 100
-
-    st.sidebar.metric("S&P 500", f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
-
-    fig, ax = plt.subplots(figsize=(3.5, 2))
-    ax.plot(sp500_data['Date'], sp500_data['Close'], color='#003366')
-    ax.set_xlabel("")
-    ax.set_ylabel("Price")
-    ax.set_title("")
-    ax.tick_params(axis='x', labelsize=8, rotation=45)
-    ax.tick_params(axis='y', labelsize=8)
-    ax.grid(True, linestyle='--', alpha=0.5)
-    plt.tight_layout()
-    st.sidebar.pyplot(fig)
+data = fetch_real_time_data()
+if data:
+    for item in data:
+        if item['symbol'] in ["AAPL", "AMZN", "GOOGL", "META", "NVDA", "TSLA"]:
+            st.sidebar.metric(label=item['name'], value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
+        elif item['symbol'] == "^GSPC":
+            st.sidebar.metric(label="S&P 500", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
+        elif item['symbol'] == "^IXIC":
+            st.sidebar.metric(label="Nasdaq", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
+        elif item['symbol'] == "^DJI":
+            st.sidebar.metric(label="Dow Jones", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
 else:
-    st.sidebar.warning("⚠️ Failed to fetch S&P 500 data.")
+    st.sidebar.warning("Failed to fetch real-time data.")
 
 st.divider()
 
@@ -134,7 +122,7 @@ try:
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.divider()
 
-    # === Metrics ===
+    # === Portfolio Metrics: 7 columns inline ===
     st.subheader("Portfolio Averages and Totals")
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
@@ -183,7 +171,7 @@ try:
     st.dataframe(filtered_df, use_container_width=True)
     st.divider()
 
-    # === Reports ===
+    # === Report Generators ===
     st.subheader("Generate Reports")
 
     def create_ppt(df):
@@ -247,8 +235,6 @@ try:
         if st.button("Generate Word Report"):
             docx_file = create_docx(filtered_df)
             with open(docx_file, "rb") as f:
-                st.download_button("Download Word Report", f, file_name=docx_file)
-
-except Exception as e:
-    st.error(f"⚠️ Error loading Excel file: {e}")
-
+                st.download_button
+::contentReference[oaicite:0]{index=0}
+ 
