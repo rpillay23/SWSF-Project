@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
 <style>
-/* Remove stray black box, align main content */
 main { padding: 0 20px 20px 20px; }
 
 /* Header styling with black background */
@@ -33,33 +32,33 @@ main { padding: 0 20px 20px 20px; }
     font-size: 11px;
 }
 
-/* Market indices inline styling */
+/* Horizontal market indices styling */
 .market-indices {
-    margin-top: 100px;  /* below fixed header */
+    margin-top: 100px;
     margin-bottom: 25px;
     display: flex;
-    gap: 40px;
-    align-items: center;
+    justify-content: flex-start;
+    gap: 20px;
 }
-.market-indices div {
+.market-indices > .index-card {
     background: #111;
     padding: 12px 18px;
     color: white;
     border-radius: 4px;
     text-align: center;
-    min-width: 120px;
+    min-width: 130px;
 }
-.market-indices .name {
+.index-card .name {
     font-size: 14px;
     font-weight: 700;
     margin-bottom: 4px;
 }
-.market-indices .value {
+.index-card .value {
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 3px;
 }
-.market-indices .delta {
+.index-card .delta {
     font-size: 13px;
     font-weight: 600;
 }
@@ -106,18 +105,17 @@ prices = {}
 for ticker, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
     prices[name] = get_price(ticker)
 
-# --- Display Market Indices Horizontally ---
-st.markdown('<div class="market-indices">', unsafe_allow_html=True)
+# --- Render Horizontal Market Indices ---
+cards = ""
 for name, (val, delta) in prices.items():
     color = "#4caf50" if delta.startswith("+") else "#f44336"
-    st.markdown(f'''
-        <div>
-            <div class="name">{name}</div>
-            <div class="value">{val}</div>
-            <div class="delta" style="color: {color};">{delta}</div>
-        </div>
-    ''', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+    cards += f'''
+    <div class="index-card">
+      <div class="name">{name}</div>
+      <div class="value">{val}</div>
+      <div class="delta" style="color:{color};">{delta}</div>
+    </div>'''
+st.markdown(f'<div class="market-indices">{cards}</div>', unsafe_allow_html=True)
 
 # --- Load Data ---
 @st.cache_data(ttl=600)
@@ -138,7 +136,7 @@ sel_cats = st.multiselect("", sorted(df["Category"].dropna().unique()), default=
 st.subheader("2. Editable Investment Data")
 edited = st.data_editor(df[df["Category"].isin(sel_cats)], use_container_width=True, num_rows="fixed")
 
-# --- Helper for safe mean calculations ---
+# --- Helper ---
 def mean_or_na(df, col):
     return f"{df[col].mean():.2f}" if col in df.columns and not df.empty else "N/A"
 
@@ -214,14 +212,10 @@ time_horizon = st.selectbox("Time Horizon", ["Short", "Medium", "Long"], index=1
 hedge = st.checkbox("Inflation Hedge Only")
 
 filtered = edited.copy()
-if "Minimum Investment ($)" in filtered.columns:
-    filtered = filtered[filtered["Minimum Investment ($)"] >= min_inv]
-if "Expected Return (%)" in filtered.columns:
-    filtered = filtered[filtered["Expected Return (%)"] >= min_ret]
-if "Risk Level (1-10)" in filtered.columns:
-    filtered = filtered[filtered["Risk Level (1-10)"] <= max_risk]
-if hedge and "Inflation Hedge (Yes/No)" in filtered.columns:
-    filtered = filtered[filtered["Inflation Hedge (Yes/No)"] == "Yes"]
+if "Minimum Investment ($)" in filtered.columns: filtered = filtered[filtered["Minimum Investment ($)"] >= min_inv]
+if "Expected Return (%)" in filtered.columns: filtered = filtered[filtered["Expected Return (%)"] >= min_ret]
+if "Risk Level (1-10)" in filtered.columns: filtered = filtered[filtered["Risk Level (1-10)"] <= max_risk]
+if hedge and "Inflation Hedge (Yes/No)" in filtered.columns: filtered = filtered[filtered["Inflation Hedge (Yes/No)"] == "Yes"]
 
 # --- 6) Filtered Table & Export ---
 st.subheader(f"6. Filtered Investments ({len(filtered)})")
