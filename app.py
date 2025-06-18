@@ -28,9 +28,10 @@ st.markdown("""
     margin:0;
     font-size:24px;
     font-weight:700;
+    margin-bottom:2px;
 }
 .app-header p {
-    margin:4px 0 0;
+    margin:0;
     color:#f44336;
     font-size:13px;
 }
