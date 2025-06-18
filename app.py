@@ -5,6 +5,7 @@ from pptx import Presentation
 from pptx.util import Inches
 from docx import Document
 from docx.shared import Inches as DocxInches
+import yfinance as yf
 import requests
 
 # === Page Configuration and Styling ===
@@ -86,29 +87,91 @@ def sanitize_string(s):
         )
     return s
 
-# === Fetch Real-Time Data from Financial Modeling Prep API ===
-def fetch_real_time_data():
-    tickers = ["AAPL", "AMZN", "GOOGL", "META", "NVDA", "TSLA", "^GSPC", "^IXIC", "^DJI"]
-    url = f"https://financialmodelingprep.com/api/v3/quote/{','.join(tickers)}?apikey=YOUR_API_KEY"
-    response = requests.get(url)
-    return response.json()
+# === Cache yfinance data fetch for 10 minutes ===
+@st.cache_data(ttl=600)
+def get_index_data(ticker):
+    index = yf.Ticker(ticker)
+    hist = index.history(period="1mo")
+    hist.reset_index(inplace=True)
+    return hist
 
 # === Sidebar: Real-Time Market Data ===
 st.sidebar.header("Real-Time Market Data")
 
-data = fetch_real_time_data()
-if data:
-    for item in data:
-        if item['symbol'] in ["AAPL", "AMZN", "GOOGL", "META", "NVDA", "TSLA"]:
-            st.sidebar.metric(label=item['name'], value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
-        elif item['symbol'] == "^GSPC":
-            st.sidebar.metric(label="S&P 500", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
-        elif item['symbol'] == "^IXIC":
-            st.sidebar.metric(label="Nasdaq", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
-        elif item['symbol'] == "^DJI":
-            st.sidebar.metric(label="Dow Jones", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
+# S&P 500
+sp500_data = get_index_data("^GSPC")
+if not sp500_data.empty:
+    latest_sp500 = sp500_data.iloc[-1]
+    prev_sp500 = sp500_data.iloc[-2]
+    latest_sp500_close = latest_sp500['Close']
+    prev_sp500_close = prev_sp500['Close']
+    change_sp500 = latest_sp500_close - prev_sp500_close
+    pct_change_sp500 = (change_sp500 / prev_sp500_close) * 100
+
+    st.sidebar.metric("S&P 500", f"${latest_sp500_close:.2f}", f"{change_sp500:+.2f} ({pct_change_sp500:+.2f}%)")
+
+    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
+    ax.plot(sp500_data['Date'], sp500_data['Close'], label='S&P 500 Close', color='#003366')
+    ax.set_xlabel("")
+    ax.set_ylabel("Price ($)")
+    ax.set_title("")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
+    plt.tight_layout()
+    st.sidebar.pyplot(fig)
 else:
-    st.sidebar.warning("Failed to fetch real-time data.")
+    st.sidebar.warning("Failed to fetch S&P 500 data.")
+
+# Nasdaq
+nasdaq_data = get_index_data("^IXIC")
+if not nasdaq_data.empty:
+    latest_nasdaq = nasdaq_data.iloc[-1]
+    prev_nasdaq = nasdaq_data.iloc[-2]
+    latest_nasdaq_close = latest_nasdaq['Close']
+    prev_nasdaq_close = prev_nasdaq['Close']
+    change_nasdaq = latest_nasdaq_close - prev_nasdaq_close
+    pct_change_nasdaq = (change_nasdaq / prev_nasdaq_close) * 100
+
+    st.sidebar.metric("Nasdaq", f"${latest_nasdaq_close:.2f}", f"{change_nasdaq:+.2f} ({pct_change_nasdaq:+.2f}%)")
+
+    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
+    ax.plot(nasdaq_data['Date'], nasdaq_data['Close'], label='Nasdaq Close', color='#003366')
+    ax.set_xlabel("")
+    ax.set_ylabel("Price ($)")
+    ax.set_title("")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
+    plt.tight_layout()
+    st.sidebar.pyplot(fig)
+else:
+    st.sidebar.warning("Failed to fetch Nasdaq data.")
+
+# Dow Jones
+dowjones_data = get_index_data("^DJI")
+if not dowjones_data.empty:
+    latest_dowjones = dowjones_data.iloc[-1]
+    prev_dowjones = dowjones_data.iloc[-2]
+    latest_dowjones_close = latest_dowjones['Close']
+    prev_dowjones_close = prev_dowjones['Close']
+    change_dowjones = latest_dowjones_close - prev_dowjones_close
+    pct_change_dowjones = (change_dowjones / prev_dowjones_close) * 100
+
+    st.sidebar.metric("Dow Jones", f"${latest_dowjones_close:.2f}", f"{change_dowjones:+.2f} ({pct_change_dowjones:+.2f}%)")
+
+    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
+    ax.plot(dowjones_data['Date'], dowjones_data['Close'], label='Dow Jones Close', color='#003366')
+    ax.set_xlabel("")
+    ax.set_ylabel("Price ($)")
+    ax.set_title("")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
+    plt.tight_layout()
+    st.sidebar.pyplot(fig)
+else:
+    st.sidebar.warning("Failed to fetch Dow Jones data.")
 
 st.divider()
 
@@ -176,65 +239,6 @@ try:
 
     def create_ppt(df):
         prs = Presentation()
-        slide = prs.slides.add_slide(prs.slide_layouts[0])
-        slide.shapes.title.text = "Comprehensive Investment Overview"
-        slide.placeholders[1].text = "Alternative & Traditional Investments"
-
-        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
-        slide = prs.slides.add_slide(prs.slide_layouts[1])
-        slide.shapes.title.text = "Portfolio Averages"
-        slide.placeholders[1].text = "\n".join([f"{k}: {v}" for k, v in avg.items()])
-
-        chart_file = "streamlit_chart.png"
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(chart_file)
-        plt.close()
-
-        slide = prs.slides.add_slide(prs.slide_layouts[5])
-        slide.shapes.title.text = "Expected Return Chart"
-        slide.shapes.add_picture(chart_file, Inches(1), Inches(1.5), width=Inches(8))
-
-        ppt_file = "HNW_Investment_Presentation.pptx"
-        prs.save(ppt_file)
-        return ppt_file
-
-    def create_docx(df):
-        document = Document()
-        document.add_heading("HNW Investment Summary", 0)
-
-        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
-        document.add_heading("Portfolio Averages", level=1)
-        for k, v in avg.items():
-            document.add_paragraph(f"{k}: {v}")
-
-        chart_file = "streamlit_chart.png"
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90)
-        plt.tight_layout()
-        plt.savefig(chart_file)
-        plt.close()
-
-        document.add_heading("Expected Return Chart", level=1)
-        document.add_picture(chart_file, width=DocxInches(6.5))
-        docx_file = "HNW_Investment_Summary.docx"
-        document.save(docx_file)
-        return docx_file
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Generate PowerPoint"):
-            ppt_file = create_ppt(filtered_df)
-            with open(ppt_file, "rb") as f:
-                st.download_button("Download PowerPoint", f, file_name=ppt_file)
-
-    with col2:
-        if st.button("Generate Word Report"):
-            docx_file = create_docx(filtered_df)
-            with open(docx_file, "rb") as f:
-                st.download_button
+        slide = prs.slides.add_slide(prs.slide_layouts
 ::contentReference[oaicite:0]{index=0}
  
