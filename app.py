@@ -192,3 +192,24 @@ min_r = st.slider("Min Return (%)", 0.0, float(edited["Expected Return (%)"].max
     if "Expected Return (%)" in edited else 0
 max_r = st.slider("Max Risk level", 0, 10, 10)
 time_h = st.selectbox("Time Horizon", ["Short", "Medium", "Long"])
+hedge = st.checkbox("Inflation Hedge Only")
+
+f = edited.copy()
+if "Minimum Investment ($)" in f: f = f[f["Minimum Investment ($)"] >= min_i]
+if "Expected Return (%)" in f: f = f[f["Expected Return (%)"] >= min_r]
+if "Risk Level (1-10)" in f: f = f[f["Risk Level (1-10)"] <= max_r]
+if hedge and "Inflation Hedge (Yes/No)" in f: f = f[f["Inflation Hedge (Yes/No)"] == "Yes"]
+
+# --- 6. FILTERED TABLE ---
+st.subheader(f"Filtered Investments")
+st.dataframe(f, height=220)
+
+# --- 7. EXPORT REPORTS ---
+st.subheader("Export Data and Reports")
+b1, b2 = st.columns(2)
+with b1:
+    if st.button("Download PowerPoint"):
+        st.success("PPT placeholder")
+with b2:
+    if st.button("Download Word"):
+        st.success("Word placeholder")
