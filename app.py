@@ -7,89 +7,78 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
 <style>
-/* Top padding for fixed header */
-.css-1d391kg { padding-top:110px !important; }
+/* Left sidebar box */
+.left-sidebar {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    width: 220px;  /* narrower */
+    height: calc(100vh - 80px);
+    background: #111;
+    color: white;
+    padding: 20px 15px;
+    overflow-y: auto;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.6);
+    z-index: 998;
+    font-family: inherit;
+}
 
-/* Fixed top header */
+/* Main content area pushed right */
+.main-content {
+    margin-left: 240px; /* leave space for sidebar */
+    padding: 20px;
+}
+
+/* Header styling with black background */
 .app-header {
-    background:#111; 
-    color:white; 
-    padding:8px 20px; 
+    background:#111;
+    color:white;
+    padding:8px 20px;
     position:fixed;
     top:0;
     left:0;
     width:100vw;
-    z-index:999;
+    z-index: 999;
+    font-family: inherit;
 }
+
 .app-header h1 {
     margin:0;
     font-size:20px;
     font-weight:700;
 }
+
 .app-header p {
     margin:2px 0 0;
     color:#f44336;
     font-size:11px;
 }
 
-/* Narrower left fixed sidebar for market indices */
-.left-sidebar {
-    position: fixed;
-    top: 80px;
-    left: 0;
-    width: 220px;  /* Narrower width */
-    height: calc(100vh - 80px);
-    background: #111;
-    color: white;
-    padding: 20px 15px;  /* padding inside for breathing room */
-    overflow-y: auto;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.6);
-    z-index: 998;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* Main content shifted right */
-.main-content {
-    margin-left: 240px !important;  /* Slightly bigger than sidebar width */
-    padding: 0 20px 20px 20px;
-}
-
-/* Market index item styles */
+/* Market indices inside sidebar */
 .left-sidebar h2 {
     color: #f44336;
+    font-size: 18px;
     margin-bottom: 15px;
+}
+
+.index-name {
     font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.index-value {
     font-size: 22px;
-    border-bottom: 1px solid #f44336;
-    padding-bottom: 6px;
-}
-
-.left-sidebar .index-name {
-    font-size: 14px;
-    font-weight: 700;
-    margin-top: 14px;
-    letter-spacing: 0.5px;
-}
-
-.left-sidebar .index-value {
-    font-size: 20px;
-    margin-top: 2px;
     font-weight: 600;
-    color: #fff;
+    margin-bottom: 3px;
 }
 
-.left-sidebar .index-delta {
+.index-delta {
     font-size: 14px;
-    margin-top: 2px;
     font-weight: 600;
 }
 
-.left-sidebar hr {
-    border-color: #333;
-    margin: 12px 0;
-}
-
-/* Buttons styling */
+/* Streamlit button styling */
 .stButton > button {
     background:#111;
     color:#f44336;
@@ -104,7 +93,7 @@ st.markdown("""
     color:#111;
 }
 
-/* Smaller font size for dataframes */
+/* Dataframe font size */
 [data-testid="stDataFrame"] {
     font-size:12px;
 }
@@ -116,7 +105,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Market Indices Sidebar on Left ---
+# --- Fetch Market Index Prices ---
 @st.cache_data(ttl=300)
 def get_price(ticker):
     hist = yf.Ticker(ticker).history(period="2d")['Close']
@@ -128,27 +117,24 @@ def get_price(ticker):
     return "N/A", ""
 
 prices = {}
-for t, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
-    prices[name] = get_price(t)
+for ticker, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
+    prices[name] = get_price(ticker)
 
-# Render the sidebar container
+# --- Render Market Indices inside left sidebar ---
 st.markdown('<div class="left-sidebar">', unsafe_allow_html=True)
 st.markdown('<h2>Market Indices</h2>', unsafe_allow_html=True)
-
 for name, (val, delta) in prices.items():
     color = "#4caf50" if delta.startswith("+") else "#f44336"
     st.markdown(f'''
-        <div>
+        <div style="margin-bottom: 18px;">
             <div class="index-name">{name}</div>
             <div class="index-value">{val}</div>
-            <div class="index-delta" style="color:{color};">{delta}</div>
-            <hr>
+            <div class="index-delta" style="color: {color};">{delta}</div>
         </div>
     ''', unsafe_allow_html=True)
-
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Main content container with margin-left ---
+# --- Main content container ---
 st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
 # --- Load Data ---
@@ -157,7 +143,6 @@ def load_data():
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
     df.columns = df.columns.str.strip()
     return df
-
 df = load_data()
 
 # --- 1) Select Categories ---
@@ -195,15 +180,16 @@ for (label, col), panel in zip(fields, cols):
 # --- 4) Visual Charts ---
 st.subheader("4. Visual Insights")
 charts = st.columns(4)
+
 def chart_bar(x, y):
-    fig, ax = plt.subplots(figsize=(2.7, 1.8))
+    fig, ax = plt.subplots(figsize=(2.7,1.8))
     ax.bar(x, y, color="#f44336")
     ax.tick_params(axis="x", rotation=45, labelsize=6)
     fig.tight_layout()
     return fig
 
 def chart_scatter(x, y, xl, yl):
-    fig, ax = plt.subplots(figsize=(2.7, 1.8))
+    fig, ax = plt.subplots(figsize=(2.7,1.8))
     ax.scatter(x, y, c="red", alpha=0.6)
     ax.set_xlabel(xl, fontsize=7)
     ax.set_ylabel(yl, fontsize=7)
@@ -233,7 +219,7 @@ for slot, cfg in zip(charts, mapping):
             if cfg[1]:
                 slot.pyplot(cfg[1](edited["Investment Name"], edited[col]))
             else:
-                fig, ax = plt.subplots(figsize=(2.7, 1.8))
+                fig, ax = plt.subplots(figsize=(2.7,1.8))
                 ax.hist(edited[col], bins=8, color="#f44336", alpha=0.7)
                 ax.tick_params(labelsize=6)
                 fig.tight_layout()
@@ -241,9 +227,27 @@ for slot, cfg in zip(charts, mapping):
 
 # --- 5) Bottom Filters ---
 st.subheader("5. Portfolio Constraints")
-min_inv = st.slider("Min Investment ($)", int(edited["Minimum Investment ($)"].min()), int(edited["Minimum Investment ($)"].max()), int(edited["Minimum Investment ($)"].min()), step=1000) if "Minimum Investment ($)" in edited.columns else 0
-min_ret = st.slider("Min Return (%)", float(edited["Expected Return (%)"].min()), float(edited["Expected Return (%)"].max()), float(edited["Expected Return (%)"].min()), step=0.1) if "Expected Return (%)" in edited.columns else 0
-max_risk = st.slider("Max Risk Level", int(edited["Risk Level (1-10)"].min()), int(edited["Risk Level (1-10)"].max()), int(edited["Risk Level (1-10)"].max()), step=1) if "Risk Level (1-10)" in edited.columns else 10
+min_inv = st.slider(
+    "Min Investment ($)", 
+    int(edited["Minimum Investment ($)"].min()), 
+    int(edited["Minimum Investment ($)"].max()), 
+    int(edited["Minimum Investment ($)"].min()), 
+    step=1000) if "Minimum Investment ($)" in edited.columns else 0
+
+min_ret = st.slider(
+    "Min Return (%)", 
+    float(edited["Expected Return (%)"].min()), 
+    float(edited["Expected Return (%)"].max()), 
+    float(edited["Expected Return (%)"].min()), 
+    step=0.1) if "Expected Return (%)" in edited.columns else 0
+
+max_risk = st.slider(
+    "Max Risk Level", 
+    int(edited["Risk Level (1-10)"].min()), 
+    int(edited["Risk Level (1-10)"].max()), 
+    int(edited["Risk Level (1-10)"].max()), 
+    step=1) if "Risk Level (1-10)" in edited.columns else 10
+
 time_horizon = st.selectbox("Time Horizon", ["Short", "Medium", "Long"], index=1)
 hedge = st.checkbox("Inflation Hedge Only")
 
@@ -270,4 +274,5 @@ with b2:
     if st.button("📥 Download Word"):
         st.success("Word export placeholder")
 
-st.markdown('</div>', unsafe_allow_html=True)  # Close main-content div
+# --- Close main content div ---
+st.markdown('</div>', unsafe_allow_html=True)
