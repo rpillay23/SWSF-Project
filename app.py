@@ -87,9 +87,8 @@ def get_index_data(ticker):
     hist.reset_index(inplace=True)
     return hist
 
-# === Sidebar: Real-Time Market Data (PERMANENT) ===
-st.sidebar.header("Real-Time Market Data")
-
+# === Sidebar: Real-Time Market Data (PERMANENT TOP) ===
+st.sidebar.markdown("## Real-Time Market Indices")
 for label, ticker in [("S&P 500", "^GSPC"), ("Nasdaq", "^IXIC"), ("Dow Jones", "^DJI")]:
     df_market = get_index_data(ticker)
     if not df_market.empty:
