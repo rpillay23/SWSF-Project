@@ -4,7 +4,7 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 import streamlit.components.v1 as components
 
-# === Page Config & Header Styling ===
+# === Page Setup & Styling ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
 <style>
@@ -18,13 +18,14 @@ st.markdown("""
 }
 .app-header h1 { margin: 0; font-size: 20px; }
 .app-header p { margin: 0; font-size: 12px; color: #f44336; }
-main { margin-right: 200px; padding: 20px; }
+main, .block-container {
+    padding-top: 80px !important;
+    margin-right: 200px;
+}
 .stButton > button {
     background: #111; color: #f44336;
-    border: 2px solid #f44336;
-    border-radius: 4px;
-    padding: 0.3em 0.8em;
-    font-weight: 700; font-size: 12px;
+    border: 2px solid #f44336; border-radius: 4px;
+    padding: 0.3em 0.8em; font-weight: 700; font-size: 12px;
 }
 .stButton > button:hover { background: #f44336; color: #111; }
 [data-testid="stDataFrame"] { font-size: 12px; }
@@ -35,13 +36,14 @@ main { margin-right: 200px; padding: 20px; }
 </div>
 """, unsafe_allow_html=True)
 
-# === Market Indices Fetch & HTML Injection ===
+# === Fetch Market Indices & Inject Right-Side Box ===
 @st.cache_data(ttl=300)
 def get_price(ticker):
     hist = yf.Ticker(ticker).history(period="2d")['Close']
     if len(hist) >= 2:
         cur, prev = hist.iloc[-1], hist.iloc[-2]
-        diff, pct = cur - prev, (cur - prev) / prev * 100
+        diff = cur - prev
+        pct = diff / prev * 100
         return f"${cur:,.2f}", f"{diff:+.2f} ({pct:+.2f}%)"
     return None, None
 
@@ -78,6 +80,7 @@ html += """
     z-index: 999;
     height: calc(100vh - 70px);
     overflow-y: auto;
+    font-family: system-ui, sans-serif;
 }
 #market-box h2 {
     text-align: center;
@@ -113,9 +116,9 @@ selected = st.multiselect("", choices, default=choices)
 st.subheader("2. Editable Investment Data")
 editable_df = st.data_editor(df[df["Category"].isin(selected)], use_container_width=True, num_rows="fixed")
 
-# 🛠 Helper to compute averages
+# 🛠 Helper for averages
 def safe_mean(df, col):
-    return df[col].mean() if col in df and not df.empty else None
+    return df[col].mean() if col in df.columns and not df.empty else None
 
 # 3️⃣ Portfolio Averages
 st.subheader("3. Portfolio Averages")
@@ -137,7 +140,7 @@ for (col_name, label), slot in zip(metrics, cols):
         display = "N/A"
     slot.metric(label, display)
 
-# 4️⃣ Visual Charts
+# 4️⃣ Visual Insights (Compact Charts)
 st.subheader("4. Visual Insights")
 chart_areas = st.columns(4)
 
@@ -185,7 +188,7 @@ for area, cfg in zip(chart_areas, plot_configs):
                 fig.tight_layout()
                 area.pyplot(fig)
 
-# 5️⃣ Bottom Filters
+# 5️⃣ Portfolio Constraints
 st.subheader("5. Portfolio Constraints")
 min_i = st.slider("Min Investment ($)", int(editable_df["Minimum Investment ($)"].min()), int(editable_df["Minimum Investment ($)"].max()), step=1000) if "Minimum Investment ($)" in editable_df else 0
 min_r = st.slider("Min Return (%)", float(editable_df["Expected Return (%)"].min()), float(editable_df["Expected Return (%)"].max()), step=0.1) if "Expected Return (%)" in editable_df else 0
@@ -203,15 +206,17 @@ if "Risk Level (1-10)" in filtered:
 if hedge and "Inflation Hedge (Yes/No)" in filtered:
     filtered = filtered[filtered["Inflation Hedge (Yes/No)"] == "Yes"]
 
-# 6️⃣ & 7️⃣ Filtered Table + Export
+# 6️⃣ Filtered Investments Table
 st.subheader(f"6. Filtered Investments ({len(filtered)})")
 st.dataframe(filtered, height=250)
 
+# 7️⃣ Export Reports
 st.subheader("7. Export Reports")
-exp1, exp2 = st.columns(2)
-with exp1:
+ex1, ex2 = st.columns(2)
+with ex1:
     if st.button("📤 Export PowerPoint"):
-        st.success("PPT export placeholder")
-with exp2:
+        st.success("PowerPoint export placeholder")
+with ex2:
     if st.button("📥 Export Word"):
         st.success("Word export placeholder")
+
