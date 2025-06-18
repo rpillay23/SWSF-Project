@@ -20,7 +20,7 @@ st.markdown("""
     position:fixed;
     top:0;
     left:0;
-    width:100vw;
+    width:80vw;
     z-index:1000;
     font-family:'Helvetica Neue', Helvetica, sans-serif;
 }
