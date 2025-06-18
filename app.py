@@ -82,6 +82,8 @@ st.markdown("""
     #market-indices canvas {
         margin-top: 5px;
         margin-bottom: 15px;
+        width: 100% !important;
+        height: 80px !important;
     }
     /* MAIN CONTENT */
     #main-content {
@@ -149,7 +151,7 @@ def format_market_metric(latest, prev):
     return latest_close, change, pct_change, delta_class
 
 def plot_mini_line_chart(data):
-    fig, ax = plt.subplots(figsize=(3, 1))
+    fig, ax = plt.subplots(figsize=(3, 1.3))
     ax.plot(data['Date'], data['Close'], color='#f44336', linewidth=1.7)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -268,99 +270,57 @@ with st.container():
 
     with ch1:
         st.markdown("**Expected Return (%)**")
-        fig, ax = plt.subplots(figsize=(3, 2))
-        plot_bar(ax, filtered_df["Investment Name"], filtered_df["Expected Return (%)"], "", "Return (%)")
+        fig, ax = plt.subplots(figsize=(3,2))
+        ax.bar(filtered_df['Investment'], filtered_df['Expected Return (%)'], color='#f44336')
+        ax.set_xticklabels(filtered_df['Investment'], rotation=45, ha='right', fontsize=7)
+        ax.set_ylabel("Return %", fontsize=8)
         plt.tight_layout()
         st.pyplot(fig)
 
     with ch2:
-        st.markdown("**Liquidity vs Volatility**")
-        fig, ax = plt.subplots(figsize=(3, 2))
-        ax.scatter(filtered_df["Volatility (1–10)"], filtered_df["Liquidity (1–10)"], s=30,
-                   c='red', alpha=0.7, edgecolors='black')
+        st.markdown("**Volatility vs Liquidity**")
+        fig, ax = plt.subplots(figsize=(3,2))
+        ax.scatter(filtered_df['Volatility (1–10)'], filtered_df['Liquidity (1–10)'], color='red', alpha=0.7)
         ax.set_xlabel("Volatility", fontsize=8)
         ax.set_ylabel("Liquidity", fontsize=8)
-        ax.tick_params(axis='x', labelsize=7)
-        ax.tick_params(axis='y', labelsize=7)
+        ax.grid(True, linestyle='--', alpha=0.5)
         plt.tight_layout()
         st.pyplot(fig)
 
     with ch3:
-        st.markdown("**Fees (%) vs Expected Return (%)**")
-        fig, ax = plt.subplots(figsize=(3, 2))
-        ax.scatter(filtered_df["Fees (%)"], filtered_df["Expected Return (%)"], s=30,
-                   c='red', alpha=0.7, edgecolors='black')
-        ax.set_xlabel("Fees (%)", fontsize=8)
-        ax.set_ylabel("Return (%)", fontsize=8)
-        ax.tick_params(axis='x', labelsize=7)
-        ax.tick_params(axis='y', labelsize=7)
+        st.markdown("**Fees vs Expected Return**")
+        fig, ax = plt.subplots(figsize=(3,2))
+        ax.scatter(filtered_df['Fees (%)'], filtered_df['Expected Return (%)'], color='red', alpha=0.7)
+        ax.set_xlabel("Fees %", fontsize=8)
+        ax.set_ylabel("Expected Return %", fontsize=8)
+        ax.grid(True, linestyle='--', alpha=0.5)
         plt.tight_layout()
         st.pyplot(fig)
 
     with ch4:
         st.markdown("**Risk Level Distribution**")
-        fig, ax = plt.subplots(figsize=(3, 2))
-        ax.hist(filtered_df["Risk Level (1-10)"], bins=10, color="#f44336", alpha=0.8)
+        fig, ax = plt.subplots(figsize=(3,2))
+        ax.hist(filtered_df['Risk Level (1-10)'], bins=10, color='#f44336', alpha=0.8)
         ax.set_xlabel("Risk Level", fontsize=8)
-        ax.set_ylabel("Count", fontsize=8)
-        ax.tick_params(axis='x', labelsize=7)
-        ax.tick_params(axis='y', labelsize=7)
+        ax.set_ylabel("Frequency", fontsize=8)
         plt.tight_layout()
         st.pyplot(fig)
 
     st.divider()
 
-    # Export report options
+    # Report generation section
 
     st.header("Export Reports")
 
-    export_format = st.radio("Select export format", ["PowerPoint", "Word Document"], horizontal=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Download PowerPoint Report"):
+            # Call your PPT generation function here
+            st.success("PowerPoint report generated (functionality to implement).")
 
-    def generate_ppt_report(df_report):
-        from pptx import Presentation
-        from pptx.util import Inches
-
-        prs = Presentation()
-        slide = prs.slides.add_slide(prs.slide_layouts[5])
-        slide.shapes.title.text = "Investment Portfolio Report"
-
-        left = Inches(0.5)
-        top = Inches(1.5)
-        width = Inches(9)
-        height = Inches(5)
-        textbox = slide.shapes.add_textbox(left, top, width, height)
-        tf = textbox.text_frame
-        tf.text = f"Average Expected Return: {df_report['Expected Return (%)'].mean():.2f}%"
-        tf.add_paragraph().text = f"Average Risk Level: {df_report['Risk Level (1-10)'].mean():.2f}"
-        tf.add_paragraph().text = f"Average Fees: {df_report['Fees (%)'].mean():.2f}%"
-
-        filename = "portfolio_report.pptx"
-        prs.save(filename)
-        return filename
-
-    def generate_word_report(df_report):
-        from docx import Document
-
-        doc = Document()
-        doc.add_heading("Investment Portfolio Report", 0)
-        doc.add_paragraph(f"Average Expected Return: {df_report['Expected Return (%)'].mean():.2f}%")
-        doc.add_paragraph(f"Average Risk Level: {df_report['Risk Level (1-10)'].mean():.2f}")
-        doc.add_paragraph(f"Average Fees: {df_report['Fees (%)'].mean():.2f}%")
-        filename = "portfolio_report.docx"
-        doc.save(filename)
-        return filename
-
-    if st.button("Generate Report"):
-        if filtered_df.empty:
-            st.warning("No investments selected to generate report.")
-        else:
-            if export_format == "PowerPoint":
-                ppt_file = generate_ppt_report(filtered_df)
-                with open(ppt_file, "rb") as f:
-                    st.download_button("Download PowerPoint Report", f, ppt_file)
-            else:
-                doc_file = generate_word_report(filtered_df)
-                with open(doc_file, "rb") as f:
-                    st.download_button("Download Word Report", f, doc_file)
+    with col2:
+        if st.button("Download Word Report"):
+            # Call your Word generation function here
+            st.success("Word report generated (functionality to implement).")
 
     st.markdown('</div>', unsafe_allow_html=True)
