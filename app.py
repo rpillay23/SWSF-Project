@@ -185,7 +185,7 @@ for slot, cfg in zip(vc, vis):
                 ax.tick_params(labelsize=6); fig.tight_layout(); slot.pyplot(fig)
 
 # --- 5. FILTER -->
-st.subheader("portfolio Choices and Constraints")
+st.subheader("Portfolio Choices and Constraints")
 min_i = st.slider("Min Investment ($)", 0, int(edited["Minimum Investment ($)"].max()), 0, step=1000) \
     if "Minimum Investment ($)" in edited else 0
 min_r = st.slider("Min Return (%)", 0.0, float(edited["Expected Return (%)"].max()), 0.0, step=0.1) \
@@ -208,8 +208,8 @@ st.dataframe(f, height=220)
 st.subheader("Export Data and Reports")
 b1, b2 = st.columns(2)
 with b1:
-    if st.button("📤 Download PowerPoint"):
+    if st.button("Download PowerPoint"):
         st.success("PPT placeholder")
 with b2:
-    if st.button("📥 Download Word"):
+    if st.button("Download Word"):
         st.success("Word placeholder")
