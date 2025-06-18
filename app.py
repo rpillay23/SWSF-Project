@@ -6,104 +6,31 @@ import yfinance as yf
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 
-# --- CSS for layout and theme ---
+# --- STYLE ---
 st.markdown("""
 <style>
-/* Reset and base */
-html, body, [class*="css"] {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: white;
-    color: #111;
-    margin: 0; padding: 0;
+/* Header styling */
+header > div {
+    background-color: #111 !important;
+    color: white !important;
 }
 
-/* HEADER fixed full width */
-.app-header {
+/* Sidebar background */
+[data-testid="stSidebar"] {
     background-color: #111;
     color: white;
-    padding: 10px 20px;
-    width: 100vw;
-    position: fixed;
-    top: 0; left: 0;
-    z-index: 9999;
-    box-sizing: border-box;
-}
-.app-header h1 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 700;
-}
-.app-header p {
-    margin: 4px 0 0 0;
-    font-size: 12px;
-    color: #f44336;
-    font-weight: 500;
 }
 
-/* LEFT SIDEBAR fixed */
-#market-indices {
-    position: fixed;
-    top: 80px; /* below header */
-    left: 0;
-    width: 280px;
-    height: calc(100vh - 80px);
-    background-color: #111;
+/* Sidebar headers */
+[data-testid="stSidebar"] h2 {
+    color: #f44336;
+    font-weight: 700;
+}
+
+/* Sidebar text color */
+[data-testid="stSidebar"] p, 
+[data-testid="stSidebar"] label {
     color: white;
-    overflow-y: auto;
-    padding: 15px 15px 30px 15px;
-    border-right: 3px solid #f44336;
-    font-size: 13px;
-    box-sizing: border-box;
-    z-index: 9998;
-}
-#market-indices h2 {
-    color: #f44336;
-    font-weight: 700;
-    margin-bottom: 15px;
-    font-size: 20px;
-}
-#market-indices .index-name {
-    font-weight: 700;
-    margin-top: 15px;
-    font-size: 15px;
-}
-#market-indices .metric {
-    font-weight: 700;
-    margin-left: 5px;
-    color: #f44336;
-}
-#market-indices .delta-positive {
-    color: #4caf50;
-    font-weight: 700;
-}
-#market-indices .delta-negative {
-    color: #f44336;
-    font-weight: 700;
-}
-
-/* Make mini charts fit container */
-#market-indices .mini-chart {
-    width: 100% !important;
-    height: 90px !important;
-    margin-top: 8px;
-    margin-bottom: 12px;
-}
-
-/* MAIN CONTENT area */
-#main-content {
-    margin-left: 280px;
-    margin-top: 110px; /* below header */
-    padding: 15px 25px 40px 25px;
-    max-width: calc(100vw - 280px);
-    box-sizing: border-box;
-}
-
-/* Smaller fonts for metrics and data */
-.stMetric > div {
-    font-size: 14px !important;
-}
-.stMetric > div > div:first-child {
-    font-weight: 700 !important;
 }
 
 /* Buttons */
@@ -123,11 +50,41 @@ html, body, [class*="css"] {
     border: 2px solid #f44336;
 }
 
-/* Visual Insights charts */
-.visual-chart {
-    width: 100%;
-    max-width: 300px;
-    height: 210px;
+/* Main content area padding */
+.css-1d391kg {
+    padding-top: 110px !important;
+}
+
+/* Header bar */
+.app-header {
+    background-color: #111;
+    color: white;
+    padding: 10px 25px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 9999;
+    box-sizing: border-box;
+}
+.app-header h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+}
+.app-header p {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: #f44336;
+    font-weight: 500;
+}
+
+/* Metrics font size */
+.stMetric > div {
+    font-size: 14px !important;
+}
+.stMetric > div > div:first-child {
+    font-weight: 700 !important;
 }
 </style>
 
@@ -137,7 +94,6 @@ html, body, [class*="css"] {
     Designed for portfolio managers and finance professionals to generate, analyze, and optimize investment portfolios using real-time data.</p>
 </div>
 """, unsafe_allow_html=True)
-
 
 # --- FUNCTIONS ---
 
@@ -156,12 +112,11 @@ def format_market_metric(latest, prev):
     prev_close = prev['Close']
     change = latest_close - prev_close
     pct_change = (change / prev_close) * 100
-    delta_class = "delta-positive" if change >= 0 else "delta-negative"
-    return latest_close, change, pct_change, delta_class
+    return latest_close, change, pct_change
 
 def plot_mini_line_chart(data):
-    fig, ax = plt.subplots(figsize=(3, 1.2))
-    ax.plot(data['Date'], data['Close'], color='#f44336', linewidth=1.7)
+    fig, ax = plt.subplots(figsize=(3, 1))
+    ax.plot(data['Date'], data['Close'], color='#f44336', linewidth=1.8)
     ax.set_xticks([])
     ax.set_yticks([])
     for spine in ax.spines.values():
@@ -190,34 +145,28 @@ except Exception as e:
     st.error(f"Error loading data file: {e}")
     st.stop()
 
-# --- LEFT PERMANENT MARKET INDICES ---
+# --- SIDEBAR: Real-Time Market Indices ---
 
-st.markdown('<div id="market-indices">', unsafe_allow_html=True)
-st.markdown("<h2>Real-Time Market Indices</h2>")
+st.sidebar.markdown("## Real-Time Market Indices")
 
 for ticker, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
     data = get_index_data(ticker)
     if data.empty:
-        st.markdown(f"<div class='index-name'>{name}</div><div>Data unavailable</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"**{name}**: Data unavailable")
         continue
 
     latest = data.iloc[-1]
     prev = data.iloc[-2]
-    latest_close, change, pct_change, delta_class = format_market_metric(latest, prev)
+    latest_close, change, pct_change = format_market_metric(latest, prev)
 
-    st.markdown(f"<div class='index-name'>{name}</div>", unsafe_allow_html=True)
-    st.markdown(f"<span class='metric'>${latest_close:,.2f}</span> <span class='{delta_class}'>{change:+.2f} ({pct_change:+.2f}%)</span>", unsafe_allow_html=True)
-    
-    # plot mini chart
+    delta_color = "#4caf50" if change >= 0 else "#f44336"
+    st.sidebar.markdown(f"### {name}")
+    st.sidebar.markdown(f"<span style='font-size:18px'>${latest_close:,.2f}</span><br>"
+                        f"<span style='color:{delta_color}; font-weight:bold;'>{change:+.2f} ({pct_change:+.2f}%)</span>",
+                        unsafe_allow_html=True)
     plot_mini_line_chart(data)
 
-st.markdown('</div>', unsafe_allow_html=True)
-
 # --- MAIN CONTENT ---
-
-st.markdown('<div id="main-content">', unsafe_allow_html=True)
-
-# --- INVESTMENT GENERATOR ---
 
 st.header("Investment Generator")
 
@@ -319,5 +268,3 @@ with col1:
 with col2:
     if st.button("Download Word Report"):
         st.success("Word report generated (functionality to implement).")
-
-st.markdown('</div>', unsafe_allow_html=True)
