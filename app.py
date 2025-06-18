@@ -19,6 +19,7 @@ header > div {
 [data-testid="stSidebar"] {
     background-color: #111;
     color: white;
+    padding: 1rem;
 }
 
 /* Sidebar headers */
@@ -31,6 +32,7 @@ header > div {
 [data-testid="stSidebar"] p, 
 [data-testid="stSidebar"] label {
     color: white;
+    font-size: 14px;
 }
 
 /* Buttons */
@@ -86,6 +88,16 @@ header > div {
 .stMetric > div > div:first-child {
     font-weight: 700 !important;
 }
+
+/* Smaller font for dataframes */
+[data-testid="stDataFrame"] {
+    font-size: 13px;
+}
+
+/* Compact graph containers */
+.graph-container {
+    padding: 0 10px;
+}
 </style>
 
 <div class="app-header">
@@ -127,7 +139,8 @@ def plot_mini_line_chart(data):
 def sanitize_string(s):
     if isinstance(s, str):
         return (
-            s.replace("–", "-")
+            s.strip()
+             .replace("–", "-")
              .replace("’", "'")
              .replace("“", '"')
              .replace("”", '"')
@@ -140,10 +153,15 @@ def sanitize_string(s):
 
 try:
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
+    # Clean column names and data strings
+    df.columns = [col.strip() for col in df.columns]
     df = df.applymap(sanitize_string)
 except Exception as e:
     st.error(f"Error loading data file: {e}")
     st.stop()
+
+# Check what columns we have
+# st.write(df.columns)
 
 # --- SIDEBAR: Real-Time Market Indices ---
 
@@ -170,26 +188,41 @@ for ticker, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jo
 
 st.header("Investment Generator")
 
-categories = sorted(df['Category'].dropna().unique())
+# Ensure column names exist
+cat_col = "Category"
+min_inv_col = "Minimum Investment ($)"
+exp_ret_col = "Expected Return (%)"
+risk_col = "Risk Level (1-10)"
+investment_col = "Investment"  # Use the exact column from your file
+
+# Defensive check for investment_col presence, fallback to first text-like column
+if investment_col not in df.columns:
+    # Try to guess column for investments, e.g. first string column
+    for col in df.columns:
+        if df[col].dtype == object:
+            investment_col = col
+            break
+
+categories = sorted(df[cat_col].dropna().unique())
 selected_categories = st.multiselect("Select Investment Categories:", categories, default=categories)
 
-min_inv_default = int(df['Minimum Investment ($)'].min())
-max_inv_default = int(df['Minimum Investment ($)'].max())
+min_inv_default = int(df[min_inv_col].min())
+max_inv_default = int(df[min_inv_col].max())
 min_inv = st.slider("Minimum Investment ($)", min_value=min_inv_default, max_value=max_inv_default, value=min_inv_default, step=1000)
 
-exp_ret_min = float(df['Expected Return (%)'].min())
-exp_ret_max = float(df['Expected Return (%)'].max())
+exp_ret_min = float(df[exp_ret_col].min())
+exp_ret_max = float(df[exp_ret_col].max())
 exp_ret = st.slider("Minimum Expected Return (%)", min_value=exp_ret_min, max_value=exp_ret_max, value=exp_ret_min, step=0.1)
 
-risk_min = int(df['Risk Level (1-10)'].min())
-risk_max = int(df['Risk Level (1-10)'].max())
+risk_min = int(df[risk_col].min())
+risk_max = int(df[risk_col].max())
 max_risk = st.slider("Maximum Risk Level (1-10)", min_value=risk_min, max_value=risk_max, value=risk_max, step=1)
 
 filtered_df = df[
-    (df['Category'].isin(selected_categories)) &
-    (df['Minimum Investment ($)'] >= min_inv) &
-    (df['Expected Return (%)'] >= exp_ret) &
-    (df['Risk Level (1-10)'] <= max_risk)
+    (df[cat_col].isin(selected_categories)) &
+    (df[min_inv_col] >= min_inv) &
+    (df[exp_ret_col] >= exp_ret) &
+    (df[risk_col] <= max_risk)
 ]
 
 st.write(f"### {len(filtered_df)} Investments Matching Your Criteria")
@@ -201,13 +234,13 @@ st.divider()
 
 st.header("Portfolio Summary Metrics")
 c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
-c1.metric("Avg Return (%)", f"{filtered_df['Expected Return (%)'].mean():.2f}" if not filtered_df.empty else "N/A")
-c2.metric("Avg Risk (1–10)", f"{filtered_df['Risk Level (1-10)'].mean():.2f}" if not filtered_df.empty else "N/A")
-c3.metric("Avg Cap Rate (%)", f"{filtered_df['Cap Rate (%)'].mean():.2f}" if not filtered_df.empty else "N/A")
-c4.metric("Avg Liquidity", f"{filtered_df['Liquidity (1–10)'].mean():.2f}" if not filtered_df.empty else "N/A")
-c5.metric("Avg Volatility", f"{filtered_df['Volatility (1–10)'].mean():.2f}" if not filtered_df.empty else "N/A")
-c6.metric("Avg Fees (%)", f"{filtered_df['Fees (%)'].mean():.2f}" if not filtered_df.empty else "N/A")
-c7.metric("Avg Min Investment", f"${filtered_df['Minimum Investment ($)'].mean():,.0f}" if not filtered_df.empty else "N/A")
+c1.metric("Avg Return (%)", f"{filtered_df[exp_ret_col].mean():.2f}" if not filtered_df.empty else "N/A")
+c2.metric("Avg Risk (1–10)", f"{filtered_df[risk_col].mean():.2f}" if not filtered_df.empty else "N/A")
+c3.metric("Avg Cap Rate (%)", f"{filtered_df['Cap Rate (%)'].mean():.2f}" if 'Cap Rate (%)' in filtered_df.columns and not filtered_df.empty else "N/A")
+c4.metric("Avg Liquidity", f"{filtered_df['Liquidity (1–10)'].mean():.2f}" if 'Liquidity (1–10)' in filtered_df.columns and not filtered_df.empty else "N/A")
+c5.metric("Avg Volatility", f"{filtered_df['Volatility (1–10)'].mean():.2f}" if 'Volatility (1–10)' in filtered_df.columns and not filtered_df.empty else "N/A")
+c6.metric("Avg Fees (%)", f"{filtered_df['Fees (%)'].mean():.2f}" if 'Fees (%)' in filtered_df.columns and not filtered_df.empty else "N/A")
+c7.metric("Avg Min Investment", f"${filtered_df[min_inv_col].mean():,.0f}" if not filtered_df.empty else "N/A")
 
 st.divider()
 
@@ -219,8 +252,9 @@ ch1, ch2, ch3, ch4 = st.columns(4)
 with ch1:
     st.markdown("**Expected Return (%)**")
     fig, ax = plt.subplots(figsize=(3, 2))
-    ax.bar(filtered_df['Investment'], filtered_df['Expected Return (%)'], color='#f44336')
-    ax.set_xticklabels(filtered_df['Investment'], rotation=45, ha='right', fontsize=7)
+    if not filtered_df.empty:
+        ax.bar(filtered_df[investment_col], filtered_df[exp_ret_col], color='#f44336')
+        ax.set_xticklabels(filtered_df[investment_col], rotation=45, ha='right', fontsize=7)
     ax.set_ylabel("Return %", fontsize=8)
     plt.tight_layout()
     st.pyplot(fig)
@@ -228,7 +262,8 @@ with ch1:
 with ch2:
     st.markdown("**Volatility vs Liquidity**")
     fig, ax = plt.subplots(figsize=(3, 2))
-    ax.scatter(filtered_df['Volatility (1–10)'], filtered_df['Liquidity (1–10)'], color='red', alpha=0.7)
+    if not filtered_df.empty and 'Volatility (1–10)' in filtered_df.columns and 'Liquidity (1–10)' in filtered_df.columns:
+        ax.scatter(filtered_df['Volatility (1–10)'], filtered_df['Liquidity (1–10)'], color='red', alpha=0.7)
     ax.set_xlabel("Volatility", fontsize=8)
     ax.set_ylabel("Liquidity", fontsize=8)
     ax.grid(True, linestyle='--', alpha=0.5)
@@ -238,7 +273,8 @@ with ch2:
 with ch3:
     st.markdown("**Fees vs Expected Return**")
     fig, ax = plt.subplots(figsize=(3, 2))
-    ax.scatter(filtered_df['Fees (%)'], filtered_df['Expected Return (%)'], color='red', alpha=0.7)
+    if not filtered_df.empty and 'Fees (%)' in filtered_df.columns:
+        ax.scatter(filtered_df['Fees (%)'], filtered_df[exp_ret_col], color='red', alpha=0.7)
     ax.set_xlabel("Fees %", fontsize=8)
     ax.set_ylabel("Expected Return %", fontsize=8)
     ax.grid(True, linestyle='--', alpha=0.5)
@@ -248,7 +284,8 @@ with ch3:
 with ch4:
     st.markdown("**Risk Level Distribution**")
     fig, ax = plt.subplots(figsize=(3, 2))
-    ax.hist(filtered_df['Risk Level (1-10)'], bins=10, color='#f44336', alpha=0.8)
+    if not filtered_df.empty:
+        ax.hist(filtered_df[risk_col], bins=10, color='#f44336', alpha=0.8)
     ax.set_xlabel("Risk Level", fontsize=8)
     ax.set_ylabel("Frequency", fontsize=8)
     plt.tight_layout()
