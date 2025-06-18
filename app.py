@@ -63,11 +63,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# === Title & Subtitle ===
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
 
-# === Helper ===
 def sanitize_string(s):
     if isinstance(s, str):
         return (
@@ -87,37 +85,30 @@ def get_index_data(ticker):
     hist.reset_index(inplace=True)
     return hist
 
-# === Sidebar: Real-Time Market Data ===
+# === Sidebar Market Data ===
 st.sidebar.header("Real-Time Market Data")
-
-for index_name, ticker in [("S&P 500", "^GSPC"), ("Nasdaq", "^IXIC"), ("Dow Jones", "^DJI")]:
-    index_data = get_index_data(ticker)
-    if not index_data.empty:
-        latest = index_data.iloc[-1]
-        prev = index_data.iloc[-2]
-        latest_close = latest["Close"]
-        prev_close = prev["Close"]
-        change = latest_close - prev_close
-        pct_change = (change / prev_close) * 100
-
-        st.sidebar.metric(index_name, f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
-
+for label, ticker in [("S&P 500", "^GSPC"), ("Nasdaq", "^IXIC"), ("Dow Jones", "^DJI")]:
+    data = get_index_data(ticker)
+    if not data.empty:
+        latest = data.iloc[-1]
+        prev = data.iloc[-2]
+        diff = latest["Close"] - prev["Close"]
+        pct = (diff / prev["Close"]) * 100
+        st.sidebar.metric(label, f"${latest['Close']:.2f}", f"{diff:+.2f} ({pct:+.2f}%)")
         fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.plot(index_data['Date'], index_data['Close'], color='#003366')
-        ax.set_xlabel("")
-        ax.set_ylabel("Price ($)")
-        ax.grid(True, linestyle='--', alpha=0.5)
+        ax.plot(data["Date"], data["Close"], color="#003366")
         ax.tick_params(axis='x', rotation=45, labelsize=8)
         ax.tick_params(axis='y', labelsize=8)
+        ax.grid(True, linestyle="--", alpha=0.3)
         plt.tight_layout()
         st.sidebar.pyplot(fig)
     else:
-        st.sidebar.warning(f"Failed to fetch {index_name} data.")
+        st.sidebar.warning(f"Could not load {label} data.")
 
 st.divider()
 
 try:
-    # === Load Excel Data ===
+    # === Load and Clean Excel Data ===
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
     df = df.applymap(sanitize_string)
 
@@ -127,12 +118,12 @@ try:
     st.divider()
 
     # === Filter by Investment Type ===
-    st.subheader("Select Investment Types to Include in Portfolio Analysis")
-    available_types = sorted(edited_df["Category"].dropna().unique())
-    selected_types = st.multiselect("Investment Types", available_types, default=available_types)
+    st.subheader("Select Investment Types for Portfolio Analysis")
+    all_types = sorted(edited_df["Category"].dropna().unique())
+    selected_types = st.multiselect("Investment Types", all_types, default=all_types)
     filtered_by_type_df = edited_df[edited_df["Category"].isin(selected_types)]
 
-    # === Metrics ===
+    # === Portfolio Metrics ===
     st.subheader("Portfolio Averages and Totals")
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{filtered_by_type_df['Expected Return (%)'].mean():.2f}%")
@@ -144,27 +135,75 @@ try:
     col7.metric("Avg Min Investment", f"${filtered_by_type_df['Minimum Investment ($)'].mean():,.0f}")
     st.divider()
 
-    # === Charts ===
-    st.subheader("Expected Return by Investment")
-    st.bar_chart(filtered_by_type_df.set_index("Investment Name")["Expected Return (%)"])
+    # === Visual Charts ===
+    st.subheader("Investment Visualizations")
 
-    st.subheader("Liquidity vs. Volatility")
-    st.scatter_chart(
-        filtered_by_type_df,
-        x="Volatility (1–10)",
-        y="Liquidity (1–10)",
-        size="Expected Return (%)",
-        color="Category"
-    )
+    # Row 1
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**Expected Return by Investment**")
+        fig1, ax1 = plt.subplots(figsize=(5, 3))
+        ax1.bar(filtered_by_type_df["Investment Name"], filtered_by_type_df["Expected Return (%)"], color="teal")
+        ax1.set_xticklabels(filtered_by_type_df["Investment Name"], rotation=45, ha="right", fontsize=8)
+        ax1.set_ylabel("Expected Return (%)")
+        ax1.grid(True, linestyle="--", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig1)
+
+    with col2:
+        st.markdown("**Liquidity vs. Volatility**")
+        fig2, ax2 = plt.subplots(figsize=(5, 3))
+        ax2.scatter(
+            filtered_by_type_df["Volatility (1–10)"],
+            filtered_by_type_df["Liquidity (1–10)"],
+            s=filtered_by_type_df["Expected Return (%)"] * 10,
+            c=pd.factorize(filtered_by_type_df["Category"])[0],
+            cmap="tab10",
+            alpha=0.7
+        )
+        ax2.set_xlabel("Volatility (1–10)")
+        ax2.set_ylabel("Liquidity (1–10)")
+        ax2.grid(True, linestyle="--", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig2)
+
+    # Row 2
+    col3, col4 = st.columns(2)
+    with col3:
+        st.markdown("**Risk vs Expected Return**")
+        fig3, ax3 = plt.subplots(figsize=(5, 3))
+        ax3.scatter(
+            filtered_by_type_df["Risk Level (1-10)"],
+            filtered_by_type_df["Expected Return (%)"],
+            c=pd.factorize(filtered_by_type_df["Category"])[0],
+            cmap="tab10",
+            alpha=0.7
+        )
+        ax3.set_xlabel("Risk Level (1–10)")
+        ax3.set_ylabel("Expected Return (%)")
+        ax3.grid(True, linestyle="--", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig3)
+
+    with col4:
+        st.markdown("**Minimum Investment Distribution**")
+        fig4, ax4 = plt.subplots(figsize=(5, 3))
+        ax4.hist(filtered_by_type_df["Minimum Investment ($)"], bins=10, color="#003366", edgecolor="white")
+        ax4.set_xlabel("Minimum Investment ($)")
+        ax4.set_ylabel("Number of Investments")
+        ax4.grid(True, linestyle="--", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig4)
+
     st.divider()
 
     # === Filters ===
     st.subheader("Additional Filters")
-    time_options = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
-    hedge_options = ["All", "Yes", "No"]
+    time_opts = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
+    hedge_opts = ["All", "Yes", "No"]
 
-    time_filter = st.selectbox("Select Time Horizon", time_options)
-    hedge_filter = st.selectbox("Inflation Hedge?", hedge_options)
+    time_filter = st.selectbox("Time Horizon", time_opts)
+    hedge_filter = st.selectbox("Inflation Hedge?", hedge_opts)
     min_inv_filter = st.slider("Minimum Investment ($)",
                                int(edited_df["Minimum Investment ($)"].min()),
                                int(edited_df["Minimum Investment ($)"].max()),
