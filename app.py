@@ -25,15 +25,17 @@ st.markdown("""
     font-family:'Helvetica Neue', Helvetica, sans-serif;
 }
 .app-header h1 {
-    margin:0;
-    font-size:24px;
-    font-weight:700;
-    margin-bottom:2px;
+    margin: 0 0 0 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
 }
+
 .app-header p {
-    margin:0;
-    color:#f44336;
-    font-size:13px;
+    margin: 0;
+    color: #f44336;
+    font-size: 13px;
+    line-height: 1.1;
 }
 .market-indices {
     display:flex;
