@@ -7,25 +7,9 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
 <style>
-/* Left sidebar box */
-.left-sidebar {
-    position: fixed;
-    top: 80px;
-    left: 0;
-    width: 220px;  /* narrower */
-    height: calc(100vh - 80px);
-    background: #111;
-    color: white;
-    padding: 20px 15px;
-    overflow-y: auto;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.6);
-    z-index: 998;
-    font-family: inherit;
-}
-
-/* Main content area pushed right */
+/* Remove left sidebar styles, full width main content */
 .main-content {
-    margin-left: 240px; /* leave space for sidebar */
+    margin-left: 0;
     padding: 20px;
 }
 
@@ -54,8 +38,19 @@ st.markdown("""
     font-size:11px;
 }
 
-/* Market indices inside sidebar */
-.left-sidebar h2 {
+/* Market indices container at top */
+.market-indices {
+    margin-top: 100px; /* below fixed header */
+    background: #111;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 5px;
+    max-width: 400px;
+    font-family: inherit;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.market-indices h2 {
     color: #f44336;
     font-size: 18px;
     margin-bottom: 15px;
@@ -120,8 +115,8 @@ prices = {}
 for ticker, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
     prices[name] = get_price(ticker)
 
-# --- Render Market Indices inside left sidebar ---
-st.markdown('<div class="left-sidebar">', unsafe_allow_html=True)
+# --- Market Indices at top inside main page ---
+st.markdown('<div class="market-indices">', unsafe_allow_html=True)
 st.markdown('<h2>Market Indices</h2>', unsafe_allow_html=True)
 for name, (val, delta) in prices.items():
     color = "#4caf50" if delta.startswith("+") else "#f44336"
@@ -252,12 +247,9 @@ time_horizon = st.selectbox("Time Horizon", ["Short", "Medium", "Long"], index=1
 hedge = st.checkbox("Inflation Hedge Only")
 
 filtered = edited.copy()
-if "Minimum Investment ($)" in filtered.columns:
-    filtered = filtered[filtered["Minimum Investment ($)"] >= min_inv]
-if "Expected Return (%)" in filtered.columns:
-    filtered = filtered[filtered["Expected Return (%)"] >= min_ret]
-if "Risk Level (1-10)" in filtered.columns:
-    filtered = filtered[filtered["Risk Level (1-10)"] <= max_risk]
+if "Minimum Investment ($)" in filtered.columns: filtered = filtered[filtered["Minimum Investment ($)"] >= min_inv]
+if "Expected Return (%)" in filtered.columns: filtered = filtered[filtered["Expected Return (%)"] >= min_ret]
+if "Risk Level (1-10)" in filtered.columns: filtered = filtered[filtered["Risk Level (1-10)"] <= max_risk]
 if hedge and "Inflation Hedge (Yes/No)" in filtered.columns:
     filtered = filtered[filtered["Inflation Hedge (Yes/No)"] == "Yes"]
 
