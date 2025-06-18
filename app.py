@@ -7,85 +7,76 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
 <style>
-/* Remove left sidebar styles, full width main content */
-.main-content {
-    margin-left: 0;
-    padding: 20px;
-}
+/* Remove stray black box, align main content */
+main { padding: 0 20px 20px 20px; }
 
 /* Header styling with black background */
 .app-header {
-    background:#111;
-    color:white;
-    padding:8px 20px;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100vw;
+    background: #111;
+    color: white;
+    padding: 8px 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
     z-index: 999;
     font-family: inherit;
 }
-
 .app-header h1 {
-    margin:0;
-    font-size:20px;
-    font-weight:700;
-}
-
-.app-header p {
-    margin:2px 0 0;
-    color:#f44336;
-    font-size:11px;
-}
-
-/* Market indices container at top */
-.market-indices {
-    margin-top: 100px; /* below fixed header */
-    background: #111;
-    color: white;
-    padding: 15px 25px;
-    border-radius: 5px;
-    max-width: 400px;
-    font-family: inherit;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-}
-
-.market-indices h2 {
-    color: #f44336;
-    font-size: 18px;
-    margin-bottom: 15px;
-}
-
-.index-name {
+    margin: 0;
+    font-size: 20px;
     font-weight: 700;
-    font-size: 15px;
+}
+.app-header p {
+    margin: 2px 0 0;
+    color: #f44336;
+    font-size: 11px;
+}
+
+/* Market indices inline styling */
+.market-indices {
+    margin-top: 100px;  /* below fixed header */
+    margin-bottom: 25px;
+    display: flex;
+    gap: 40px;
+    align-items: center;
+}
+.market-indices div {
+    background: #111;
+    padding: 12px 18px;
+    color: white;
+    border-radius: 4px;
+    text-align: center;
+    min-width: 120px;
+}
+.market-indices .name {
+    font-size: 14px;
+    font-weight: 700;
     margin-bottom: 4px;
 }
-
-.index-value {
-    font-size: 22px;
+.market-indices .value {
+    font-size: 18px;
     font-weight: 600;
     margin-bottom: 3px;
 }
-
-.index-delta {
-    font-size: 14px;
+.market-indices .delta {
+    font-size: 13px;
     font-weight: 600;
 }
 
-/* Streamlit button styling */
+/* Button styling */
 .stButton > button {
-    background:#111;
-    color:#f44336;
-    border:2px solid #f44336;
-    border-radius:4px;
-    padding:0.3em 0.8em;
-    font-weight:700;
-    font-size:12px;
+    background: #111;
+    color: #f44336;
+    border: 2px solid #f44336;
+    border-radius: 4px;
+    padding: 0.3em 0.8em;
+    font-weight: 700;
+    font-size: 12px;
 }
 .stButton > button:hover {
-    background:#f44336;
-    color:#111;
+    background: #f44336;
+    color: #111;
 }
 
 /* Dataframe font size */
@@ -115,22 +106,18 @@ prices = {}
 for ticker, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")]:
     prices[name] = get_price(ticker)
 
-# --- Market Indices at top inside main page ---
+# --- Display Market Indices Horizontally ---
 st.markdown('<div class="market-indices">', unsafe_allow_html=True)
-st.markdown('<h2>Market Indices</h2>', unsafe_allow_html=True)
 for name, (val, delta) in prices.items():
     color = "#4caf50" if delta.startswith("+") else "#f44336"
     st.markdown(f'''
-        <div style="margin-bottom: 18px;">
-            <div class="index-name">{name}</div>
-            <div class="index-value">{val}</div>
-            <div class="index-delta" style="color: {color};">{delta}</div>
+        <div>
+            <div class="name">{name}</div>
+            <div class="value">{val}</div>
+            <div class="delta" style="color: {color};">{delta}</div>
         </div>
     ''', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
-
-# --- Main content container ---
-st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
 # --- Load Data ---
 @st.cache_data(ttl=600)
@@ -145,14 +132,13 @@ st.subheader("1. Select Investment Types")
 if "Category" not in df.columns:
     st.error("Missing 'Category' column in data.")
     st.stop()
-cats = sorted(df["Category"].dropna().unique())
-sel_cats = st.multiselect("", cats, default=cats)
+sel_cats = st.multiselect("", sorted(df["Category"].dropna().unique()), default=sorted(df["Category"].dropna().unique()))
 
 # --- 2) Editable Table ---
 st.subheader("2. Editable Investment Data")
 edited = st.data_editor(df[df["Category"].isin(sel_cats)], use_container_width=True, num_rows="fixed")
 
-# --- Helper for safe column mean ---
+# --- Helper for safe mean calculations ---
 def mean_or_na(df, col):
     return f"{df[col].mean():.2f}" if col in df.columns and not df.empty else "N/A"
 
@@ -165,14 +151,14 @@ fields = [
     ("Avg Liquidity", "Liquidity (1-10)"),
     ("Avg Volatility", "Volatility (1-10)"),
     ("Avg Fees (%)", "Fees (%)"),
-    ("Avg Min Invest ($)", "Minimum Investment ($)")
+    ("Avg Min Inv ($)", "Minimum Investment ($)")
 ]
 cols = st.columns(len(fields))
 for (label, col), panel in zip(fields, cols):
     val = mean_or_na(edited, col)
-    panel.metric(label, f"{val}%" if "%" in label or "Rate" in label else (f"${val}" if "Invest" in label else val))
+    panel.metric(label, f"{val}%" if "%" in label or "Rate" in label else (f"${val}" if "Inv" in label else val))
 
-# --- 4) Visual Charts ---
+# --- 4) Visual Insights ---
 st.subheader("4. Visual Insights")
 charts = st.columns(4)
 
@@ -196,17 +182,15 @@ mapping = [
     ("Expected Return (%)", chart_bar),
     (("Volatility (1-10)", "Liquidity (1-10)"), chart_scatter),
     (("Fees (%)", "Expected Return (%)"), chart_scatter),
-    ("Risk Level (1-10)", None)  # special histogram
+    ("Risk Level (1-10)", None)
 ]
 
 for slot, cfg in zip(charts, mapping):
     if isinstance(cfg[0], tuple):
         x, y = cfg[0]
-        label = f"{y} vs {x}"
-        slot.markdown(f"**{label}**")
+        slot.markdown(f"**{y} vs {x}**")
         if x in edited and y in edited and not edited.empty:
-            func = cfg[1]
-            slot.pyplot(func(edited[x], edited[y], x, y))
+            slot.pyplot(cfg[1](edited[x], edited[y], x, y))
     else:
         col = cfg[0]
         slot.markdown(f"**{col}**")
@@ -220,36 +204,22 @@ for slot, cfg in zip(charts, mapping):
                 fig.tight_layout()
                 slot.pyplot(fig)
 
-# --- 5) Bottom Filters ---
+# --- 5) Portfolio Constraints ---
 st.subheader("5. Portfolio Constraints")
-min_inv = st.slider(
-    "Min Investment ($)", 
-    int(edited["Minimum Investment ($)"].min()), 
-    int(edited["Minimum Investment ($)"].max()), 
-    int(edited["Minimum Investment ($)"].min()), 
-    step=1000) if "Minimum Investment ($)" in edited.columns else 0
-
-min_ret = st.slider(
-    "Min Return (%)", 
-    float(edited["Expected Return (%)"].min()), 
-    float(edited["Expected Return (%)"].max()), 
-    float(edited["Expected Return (%)"].min()), 
-    step=0.1) if "Expected Return (%)" in edited.columns else 0
-
-max_risk = st.slider(
-    "Max Risk Level", 
-    int(edited["Risk Level (1-10)"].min()), 
-    int(edited["Risk Level (1-10)"].max()), 
-    int(edited["Risk Level (1-10)"].max()), 
-    step=1) if "Risk Level (1-10)" in edited.columns else 10
+min_inv = st.slider("Min Investment ($)", int(edited["Minimum Investment ($)"].min()), int(edited["Minimum Investment ($)"].max()), int(edited["Minimum Investment ($)"].min()), step=1000) if "Minimum Investment ($)" in edited.columns else 0
+min_ret = st.slider("Min Return (%)", float(edited["Expected Return (%)"].min()), float(edited["Expected Return (%)"].max()), float(edited["Expected Return (%)"].min()), step=0.1) if "Expected Return (%)" in edited.columns else 0
+max_risk = st.slider("Max Risk Level", int(edited["Risk Level (1-10)"].min()), int(edited["Risk Level (1-10)"].max()), int(edited["Risk Level (1-10)"].max()), step=1) if "Risk Level (1-10)" in edited.columns else 10
 
 time_horizon = st.selectbox("Time Horizon", ["Short", "Medium", "Long"], index=1)
 hedge = st.checkbox("Inflation Hedge Only")
 
 filtered = edited.copy()
-if "Minimum Investment ($)" in filtered.columns: filtered = filtered[filtered["Minimum Investment ($)"] >= min_inv]
-if "Expected Return (%)" in filtered.columns: filtered = filtered[filtered["Expected Return (%)"] >= min_ret]
-if "Risk Level (1-10)" in filtered.columns: filtered = filtered[filtered["Risk Level (1-10)"] <= max_risk]
+if "Minimum Investment ($)" in filtered.columns:
+    filtered = filtered[filtered["Minimum Investment ($)"] >= min_inv]
+if "Expected Return (%)" in filtered.columns:
+    filtered = filtered[filtered["Expected Return (%)"] >= min_ret]
+if "Risk Level (1-10)" in filtered.columns:
+    filtered = filtered[filtered["Risk Level (1-10)"] <= max_risk]
 if hedge and "Inflation Hedge (Yes/No)" in filtered.columns:
     filtered = filtered[filtered["Inflation Hedge (Yes/No)"] == "Yes"]
 
@@ -265,6 +235,3 @@ with b1:
 with b2:
     if st.button("📥 Download Word"):
         st.success("Word export placeholder")
-
-# --- Close main content div ---
-st.markdown('</div>', unsafe_allow_html=True)
