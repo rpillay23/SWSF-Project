@@ -10,25 +10,36 @@ import yfinance as yf
 # --- Page Config ---
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 
-# --- Global Styles ---
 st.markdown("""
     <style>
-    body, html, [class*="css"] {
-        font-family: 'Helvetica Neue', sans-serif;
-        color: #111111;
-        background-color: #ffffff;
+    .app-header {
+        background-color: #111111;
+        padding: 1.5rem 2rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
-    h1 { font-size: 26px; font-weight: 700; }
-    h2, h3 { font-size: 20px; font-weight: 600; }
-    .stButton>button { background-color: #d32f2f; color: white; border: none; padding: 0.6em 1.2em; font-size: 14px; border-radius: 4px; }
-    .stButton>button:hover { background-color: #b71c1c; }
-    .stMetric { background-color: #f5f5f5; border-radius: 6px; padding: 0.6em; color: #111111; }
-    .sidebar .stMetric .metric-label { color: #111111 !important; }
-    .sidebar .stMetric .metric-value { color: #d32f2f !important; }
-    .sidebar .stMetric .metric-delta { color: #111111 !important; }
-    .sidebar .stMarkdownContainer { color: #111111; }
-    .sidebar .css-1d391kg { background-color: #ffffff !important; } /* sidebar BG */
+    .app-header h1 {
+        color: white;
+        font-size: 28px;
+        margin: 0;
+        font-weight: bold;
+    }
+    .app-header p {
+        color: #f44336;
+        font-size: 14px;
+        margin-top: 0.5rem;
+        font-weight: 500;
+    }
     </style>
+
+    <div class="app-header">
+        <h1>Automated Investment Matrix</h1>
+        <p>
+            Modular Investment Analysis Platform with Real Market Data for Portfolio Optimization and Financial Advisory.
+            Designed for portfolio managers and finance professionals to generate, analyze, and optimize investment portfolios using real-time data.
+        </p>
+    </div>
 """, unsafe_allow_html=True)
 
 # --- Two-Column Layout ---
