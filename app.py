@@ -146,12 +146,20 @@ try:
         plt.tight_layout(); st.pyplot(fig)
 
     with col4:
-        st.markdown("**Min Investment ($)**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.hist(filtered_types_df["Minimum Investment ($)"], bins=8, color="#003366", edgecolor="white")
-        ax.set_xlabel("Min ($)", fontsize=8); ax.set_ylabel("Count", fontsize=8)
-        ax.tick_params(labelsize=6); ax.grid(True, linestyle="--", alpha=0.3)
-        plt.tight_layout(); st.pyplot(fig)
+    st.markdown("**Fees vs Expected Return**")
+    fig, ax = plt.subplots(figsize=(4, 2.5))
+    ax.scatter(
+        filtered_types_df["Fees (%)"],
+        filtered_types_df["Expected Return (%)"],
+        c=pd.factorize(filtered_types_df["Category"])[0],
+        cmap="tab10", alpha=0.7
+    )
+    ax.set_xlabel("Fees (%)", fontsize=8)
+    ax.set_ylabel("Return (%)", fontsize=8)
+    ax.tick_params(labelsize=6)
+    ax.grid(True, linestyle="--", alpha=0.3)
+    plt.tight_layout()
+    st.pyplot(fig)
 
     st.divider()
 
