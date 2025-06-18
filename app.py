@@ -1,214 +1,241 @@
 import streamlit as st
 import pandas as pd
-import yfinance as yf
+import numpy as np
 import matplotlib.pyplot as plt
-import streamlit.components.v1 as components
 
-# --- Page Config & Styling ---
-st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
+# Page config
+st.set_page_config(
+    page_title="Automated Investment Matrix",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# --- HEADER ---
 st.markdown("""
 <style>
-.app-header {
+#header-box {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 70px;
     background-color: #111;
     color: white;
-    padding: 8px 20px;
-    position: fixed;
-    top: 0; left: 0; width: 100%;
-    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 20px;
+    border-bottom: 2px solid #f44336;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    z-index: 9999;
 }
-.app-header h1 { margin: 0; font-size: 20px; }
-.app-header p { margin: 0; font-size: 12px; color: #f44336; }
-main, .block-container {
-    padding-top: 60px !important;
-    margin: 0 200px 20px 20px; /* left, right margins */
+#header-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
 }
-.stButton > button {
-    background: #111; color: #f44336;
-    border: 2px solid #f44336;
-    border-radius: 4px;
-    padding: 0.3em 0.8em;
-    font-weight: 700; font-size: 12px;
+#header-subtitle {
+    font-size: 13px;
+    color: #ddd;
+    margin: 0;
 }
-.stButton > button:hover { background: #f44336; color: #111; }
-[data-testid="stDataFrame"] { font-size: 12px; }
 </style>
-<div class="app-header">
-  <h1>Automated Investment Matrix</h1>
-  <p>Portfolio Analysis Platform with Real‑Time Data</p>
+<div id="header-box">
+  <p id="header-title">Automated Investment Matrix</p>
+  <p id="header-subtitle">Portfolio Analysis Platform with Real-Time Data</p>
 </div>
 """, unsafe_allow_html=True)
 
-# --- Market Indices Fetch & Display (Right Edge) ---
-@st.cache_data(ttl=300)
-def get_price(ticker):
-    hist = yf.Ticker(ticker).history(period="2d")['Close']
-    if len(hist) >= 2:
-        cur, prev = hist.iloc[-1], hist.iloc[-2]
-        diff = cur - prev
-        pct = diff / prev * 100
-        return f"${cur:,.2f}", f"{diff:+.2f} ({pct:+.2f}%)"
-    return None, None
+st.markdown("<br><br><br>", unsafe_allow_html=True)  # spacer below header
 
-indices = {
-    "S&P 500": get_price("^GSPC"),
-    "Nasdaq": get_price("^IXIC"),
-    "Dow Jones": get_price("^DJI")
+# --- Data Setup ---
+# Sample investment data for 7 investment types
+data = {
+    "Investment": ["Bonds", "Commodities", "Direct Lending", "Equities", "Infrastructure", "Life Settlements", "Real Estate"],
+    "Expected Return (%)": [5, 7, 9, 12, 8, 10, 6],
+    "Risk (%)": [3, 10, 7, 15, 6, 8, 5],
+    "Volatility (%)": [2.5, 12, 6, 18, 7, 9, 4],
+    "Liquidity (1-10)": [9, 6, 4, 8, 7, 3, 5],
+    "Inflation Hedge (Yes/No)": ["No", "Yes", "No", "No", "Yes", "No", "Yes"],
+    "Minimum Investment": [1000, 2000, 5000, 1500, 3000, 4000, 2500]
+}
+df = pd.DataFrame(data)
+
+# --- Right Fixed Market Index Box ---
+# Sample real-time market indices (dummy data)
+market_indices = {
+    "S&P 500": {"price": 5980.87, "change": -1.85, "pct_change": -0.03},
+    "Nasdaq": {"price": 19546.27, "change": 25.18, "pct_change": 0.13},
+    "Dow Jones": {"price": 42171.66, "change": -44.14, "pct_change": -0.10},
 }
 
-html = """
-<div id="market-box">
-  <h2>📈 Market Indices</h2>
-"""
-for name, (price, delta) in indices.items():
-    if price:
-        color = "#4caf50" if delta.startswith("+") else "#f44336"
+def render_market_indices():
+    html = """
+    <div id="market-box">
+      <h2>Market Indices</h2>
+    """
+    for name, data in market_indices.items():
+        color = "#f44336" if data["change"] < 0 else "#4caf50"
+        sign = "" if data["change"] < 0 else "+"
         html += f"""
-  <div class="metric-label">{name}</div>
-  <div class="metric-value">{price}</div>
-  <div class="metric-delta" style="color:{color};">{delta}</div>
-"""
-html += """
-</div>
-<style>
-#market-box {
-    position: fixed;
-    top: 60px;
-    right: 0;
-    width: 180px;
-    background: #111;
-    color: #fff;
-    padding: 15px;
-    border-left: 2px solid #f44336;
-    z-index: 999;
-    height: calc(100vh - 60px);
-    overflow-y: auto;
-    font-family: system-ui, sans-serif;
-}
-#market-box h2 {
-    text-align: center;
-    color: #f44336;
-    margin-bottom: 8px;
-    font-size: 16px;
-}
-.metric-label { font-size: 13px; margin-top: 8px; }
-.metric-value { font-size: 15px; font-weight: 700; }
-.metric-delta { font-size: 13px; }
-</style>
-"""
-components.html(html, height=600)
+        <div class="metric-label">{name}</div>
+        <div class="metric-value">${data['price']:.2f}</div>
+        <div class="metric-delta" style="color:{color};">{sign}{data['change']:.2f} ({sign}{data['pct_change']:.2f}%)</div>
+        <hr>
+        """
+    html += "</div>"
+    html += """
+    <style>
+    #market-box {
+        position: fixed;
+        top: 70px;
+        right: 0;
+        width: 160px;
+        background: #111;
+        color: #fff;
+        padding: 15px 10px 15px 15px;
+        border-left: 2px solid #f44336;
+        height: calc(100vh - 70px);
+        overflow-y: auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 13px;
+        z-index: 9999;
+    }
+    #market-box h2 {
+        color: #f44336;
+        font-size: 18px;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .metric-label {
+        font-weight: 600;
+        margin-top: 8px;
+        margin-bottom: 2px;
+    }
+    .metric-value {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 2px;
+    }
+    .metric-delta {
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+    hr {
+        border: 0.5px solid #333;
+        margin: 8px 0;
+    }
+    </style>
+    """
+    st.markdown(html, unsafe_allow_html=True)
 
-# --- Load Data ---
-@st.cache_data(ttl=600)
-def load_data():
-    df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
-    df.columns = df.columns.str.strip()
-    return df
+render_market_indices()
 
-df = load_data()
+# --- Main Content Area ---
+# Layout columns for main content to allow space on the right for market box
+col_main, col_blank = st.columns([8, 1])
 
-# 1. Select Investment Types
-st.subheader("1. Select Investment Types")
-if "Category" not in df.columns:
-    st.error("⚠️ Missing 'Category' column.")
-    st.stop()
-choices = sorted(df["Category"].dropna().unique())
-selected = st.multiselect("", choices, default=choices)
+with col_main:
+    # Investment types filter (checkboxes)
+    st.markdown("### Select Investment Types to Include in Portfolio")
+    selected_investments = st.multiselect(
+        "Choose investments",
+        options=df["Investment"],
+        default=df["Investment"].tolist()
+    )
 
-# 2. Editable Investment Table
-st.subheader("2. Editable Investment Data")
-editable_df = st.data_editor(df[df["Category"].isin(selected)], num_rows="fixed", use_container_width=True)
+    # Filter dataframe based on selection
+    filtered_df = df[df["Investment"].isin(selected_investments)].copy()
 
-# Helper for averages
-def safe_mean(df, col):
-    return df[col].mean() if col in df.columns and not df.empty else None
+    # Editable data table for investment parameters
+    st.markdown("### Edit Investment Parameters")
+    edited = st.experimental_data_editor(
+        filtered_df.set_index("Investment"),
+        num_rows="dynamic",
+        key="editable_table"
+    )
+    edited.reset_index(inplace=True)
 
-# 3. Portfolio Averages
-st.subheader("3. Portfolio Averages")
-metrics = [
-    ("Expected Return (%)", "Avg Return (%)"),
-    ("Risk Level (1-10)", "Avg Risk"),
-    ("Cap Rate (%)", "Avg Cap Rate"),
-    ("Liquidity (1-10)", "Avg Liquidity"),
-    ("Volatility (1-10)", "Avg Volatility"),
-    ("Fees (%)", "Avg Fees"),
-    ("Minimum Investment ($)", "Avg Min Invest")
-]
-cols = st.columns(len(metrics))
-for (col_name, label), slot in zip(metrics, cols):
-    m = safe_mean(editable_df, col_name)
-    display = f"${m:,.0f}" if col_name == "Minimum Investment ($)" else (f"{m:.2f}%" if m is not None else "N/A")
-    slot.metric(label, display)
+    # Filtering based on inflation hedge toggle and time horizon slider
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        hedge = st.checkbox("Hedge Inflation Only?", value=False)
+    with col2:
+        time_horizon = st.slider("Time Horizon (Years)", min_value=1, max_value=30, value=5)
+    with col3:
+        pass  # empty for spacing or future use
 
-# 4. Visual Charts
-st.subheader("4. Visual Insights")
-chart_areas = st.columns(4)
-# Bar plot
-if "Expected Return (%)" in editable_df:
-    fig, ax = plt.subplots(figsize=(2.5,2))
-    ax.bar(editable_df["Investment Name"], editable_df["Expected Return (%)"], color="#f44336")
-    ax.tick_params(axis="x", rotation=45, labelsize=6)
-    ax.tick_params(labelsize=6)
-    fig.tight_layout()
-    chart_areas[0].pyplot(fig)
-# Scatter volatility vs liquidity
-if {"Volatility (1-10)", "Liquidity (1-10)"}.issubset(editable_df.columns):
-    fig, ax = plt.subplots(figsize=(2.5,2))
-    ax.scatter(editable_df["Volatility (1-10)"], editable_df["Liquidity (1-10)"], color="red", alpha=0.6)
-    ax.set_xlabel("Volatility", fontsize=6)
-    ax.set_ylabel("Liquidity", fontsize=6)
-    ax.tick_params(labelsize=6)
-    ax.grid(linestyle="--", alpha=0.3)
-    fig.tight_layout()
-    chart_areas[1].pyplot(fig)
-# Fees vs return scatter
-if {"Fees (%)", "Expected Return (%)"}.issubset(editable_df.columns):
-    fig, ax = plt.subplots(figsize=(2.5,2))
-    ax.scatter(editable_df["Fees (%)"], editable_df["Expected Return (%)"], color="red", alpha=0.6)
-    ax.set_xlabel("Fees", fontsize=6)
-    ax.set_ylabel("Return", fontsize=6)
-    ax.tick_params(labelsize=6)
-    ax.grid(linestyle="--", alpha=0.3)
-    fig.tight_layout()
-    chart_areas[2].pyplot(fig)
-# Risk level histogram
-if "Risk Level (1-10)" in editable_df:
-    fig, ax = plt.subplots(figsize=(2.5,2))
-    ax.hist(editable_df["Risk Level (1-10)"], bins=8, color="#f44336", alpha=0.7)
-    ax.set_xlabel("Risk", fontsize=6)
-    ax.set_ylabel("Count", fontsize=6)
-    ax.tick_params(labelsize=6)
-    fig.tight_layout()
-    chart_areas[3].pyplot(fig)
+    # Filter for inflation hedge if selected
+    if hedge and "Inflation Hedge (Yes/No)" in edited.columns:
+        edited = edited[edited["Inflation Hedge (Yes/No)"] == "Yes"]
 
-# 5. Portfolio Constraints
-st.subheader("5. Portfolio Constraints")
-min_i = st.slider("Min Investment ($)", int(editable_df["Minimum Investment ($)"].min()), int(editable_df["Minimum Investment ($)"].max()), step=1000) if "Minimum Investment ($)" in editable_df else 0
-min_r = st.slider("Min Return (%)", float(editable_df["Expected Return (%)"].min()), float(editable_df["Expected Return (%)"].max()), step=0.1) if "Expected Return (%)" in editable_df else 0
-max_r = st.slider("Max Risk Level", int(editable_df["Risk Level (1-10)"].min()), int(editable_df["Risk Level (1-10)"].max()), step=1) if "Risk Level (1-10)" in editable_df else 10
-horizon = st.selectbox("Time Horizon", ["Short", "Medium", "Long"], index=1)
-hedge = st.checkbox("Inflation Hedge Only")
+    # Display computed averages
+    st.markdown("### Computed Averages")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Expected Return (%)", f"{edited['Expected Return (%)'].mean():.2f}")
+    c2.metric("Risk (%)", f"{edited['Risk (%)'].mean():.2f}")
+    c3.metric("Volatility (%)", f"{edited['Volatility (%)'].mean():.2f}")
+    c4.metric("Liquidity", f"{edited['Liquidity (1-10)'].mean():.2f}")
 
-filtered = editable_df.copy()
-if "Minimum Investment ($)" in filtered:
-    filtered = filtered[filtered["Minimum Investment ($)"] >= min_i]
-if "Expected Return (%)" in filtered:
-    filtered = filtered[filtered["Expected Return (%)"] >= min_r]
-if "Risk Level (1-10)" in filtered:
-    filtered = filtered[filtered["Risk Level (1-10)"] <= max_r]
-if hedge and "Inflation Hedge (Yes/No)" in filtered:
-    filtered = filtered[filtered["Inflation Hedge (Yes/No)"] == "Yes"}
+    # --- Visual Insights: 4 compact graphs side by side ---
+    st.markdown("### Investment Visual Insights")
+    fig, axs = plt.subplots(1, 4, figsize=(18, 4))
 
-# 6. Filtered Investments
-st.subheader(f"6. Filtered Investments ({len(filtered)})")
-st.dataframe(filtered, height=250)
+    # 1) Expected Return Bar Chart
+    axs[0].bar(edited['Investment'], edited['Expected Return (%)'], color='#f44336')
+    axs[0].set_title("Expected Return (%)")
+    axs[0].set_xticklabels(edited['Investment'], rotation=45, ha='right', fontsize=8)
+    axs[0].tick_params(axis='y', labelsize=8)
 
-# 7. Export Reports
-st.subheader("7. Export Reports")
-exp1, exp2 = st.columns(2)
-with exp1:
-    if st.button("📤 Export PowerPoint"):
-        st.success("PowerPoint export placeholder")
-with exp2:
-    if st.button("📥 Export Word"):
-        st.success("Word export placeholder")
+    # 2) Volatility vs Liquidity Scatterplot (points red)
+    axs[1].scatter(edited['Volatility (%)'], edited['Liquidity (1-10)'], color='red')
+    axs[1].set_xlabel("Volatility (%)")
+    axs[1].set_ylabel("Liquidity (1-10)")
+    axs[1].set_title("Volatility vs Liquidity")
+    axs[1].tick_params(axis='both', labelsize=8)
+
+    # 3) Risk vs Expected Return Scatterplot
+    axs[2].scatter(edited['Risk (%)'], edited['Expected Return (%)'], color='red')
+    axs[2].set_xlabel("Risk (%)")
+    axs[2].set_ylabel("Expected Return (%)")
+    axs[2].set_title("Risk vs Expected Return")
+    axs[2].tick_params(axis='both', labelsize=8)
+
+    # 4) Minimum Investment Bar Chart
+    axs[3].bar(edited['Investment'], edited['Minimum Investment'], color='#f44336')
+    axs[3].set_title("Minimum Investment")
+    axs[3].set_xticklabels(edited['Investment'], rotation=45, ha='right', fontsize=8)
+    axs[3].tick_params(axis='y', labelsize=8)
+
+    plt.tight_layout()
+    st.pyplot(fig)
+
+    # --- Filter your desired portfolio ---
+    st.markdown("### Filter Your Desired Portfolio")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        risk_slider = st.slider("Max Risk (%)", 0, 30, 15)
+    with col2:
+        return_slider = st.slider("Min Expected Return (%)", 0, 20, 5)
+    with col3:
+        liquidity_slider = st.slider("Min Liquidity (1-10)", 1, 10, 5)
+
+    # Filter investments based on these inputs
+    portfolio_filtered = edited[
+        (edited["Risk (%)"] <= risk_slider) &
+        (edited["Expected Return (%)"] >= return_slider) &
+        (edited["Liquidity (1-10)"] >= liquidity_slider)
+    ]
+
+    st.markdown("### Filtered Investments Matching Your Criteria")
+    st.dataframe(portfolio_filtered.style.format({
+        "Expected Return (%)": "{:.2f}",
+        "Risk (%)": "{:.2f}",
+        "Volatility (%)": "{:.2f}",
+        "Liquidity (1-10)": "{:.0f}",
+        "Minimum Investment": "${:,.0f}"
+    }), height=250)
+
+# END OF FILE
 
