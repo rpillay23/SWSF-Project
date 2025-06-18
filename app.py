@@ -192,5 +192,30 @@ with main_col:
         document.add_heading("Investment Summary Report", 0)
 
         avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
-       
+        document.add_heading("Portfolio Averages", level=1)
+        for k, v in avg.items():
+            document.add_paragraph(f"{k}: {v}")
 
+        chart_file = "docx_chart.png"
+        plt.figure(figsize=(6, 2))
+        plt.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+        plt.xticks(rotation=90, fontsize=6); plt.tight_layout(); plt.savefig(chart_file); plt.close()
+
+        document.add_picture(chart_file, width=DocxInches(6))
+        docx_file = "Investment_Summary.docx"
+        document.save(docx_file)
+        return docx_file
+
+    st.markdown("### Export Reports")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📤 Generate PowerPoint"):
+            ppt_path = create_ppt(filtered)
+            with open(ppt_path, "rb") as f:
+                st.download_button("📥 Download PowerPoint", f, file_name=ppt_path)
+
+    with col2:
+        if st.button("📝 Generate Word Document"):
+            docx_path = create_docx(filtered)
+            with open(docx_path, "rb") as f:
+                st.download_button("📥 Download Word Doc", f, file_name=docx_path)
