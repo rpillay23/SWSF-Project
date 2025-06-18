@@ -1,232 +1,215 @@
 import streamlit as st
 import pandas as pd
+import yfinance as yf
 import matplotlib.pyplot as plt
 from pptx import Presentation
 from pptx.util import Inches
 from docx import Document
 from docx.shared import Inches as DocxInches
-import yfinance as yf
 
-# === Page Config & Styling ===
+# --- PAGE CONFIG ---
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
+
+# --- STYLING & HEADER ---
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    font-family: 'Helvetica Neue', Helvetica, sans-serif;
-    background-color: white; color: #003366;
+.app-header {
+    background:#111;
+    color:white;
+    padding:12px 24px;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100vw;
+    z-index:1000;
+    font-family:'Helvetica Neue', Helvetica, sans-serif;
 }
-h1, h2, h3, .stMarkdown, p {
-    color: #003366; font-weight: bold;
+.app-header h1 {
+    margin: 0 0 0 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
 }
-.title-box {
-    background-color: #B0C4DE; border: 5px solid #003366;
-    border-radius: 10px; padding: 1em; text-align: center;
-    margin-bottom: 20px;
+
+.app-header p {
+    margin: 0;
+    color: #f44336;
+    font-size: 13px;
+    line-height: 1.1;
 }
-.subtitle {
-    font-size: 16px; color: #003366;
-    text-align: center; margin-bottom: 30px;
+.market-indices {
+    display:flex;
+    gap:20px;
+    margin-top:20px;
+    margin-bottom:1px;
+    justify-content:right;
 }
+.index-box {
+    background:#111;
+    color:white;
+    padding:10px 16px;
+    border-radius:4px;
+    text-align:center;
+    font-size:13px;
+    min-width:120px;
+}
+.index-box .name { font-weight:700; margin-bottom:4px; }
+.index-box .value { font-size:16px; margin-bottom:2px; }
+.index-box .delta { font-size:14px; }
+.index-box .positive { color:#4caf50; }
+.index-box .negative { color:#f44336; }
+[data-testid="stDataFrame"] { font-size:12px; }
 .stButton > button {
-    background-color: #003366; color: white;
-    border-radius: 6px; padding: 0.5em 1em;
-    border: none; font-weight: bold;
+    background:#111;
+    color:#f44336;
+    border:2px solid #f44336;
+    padding:0.5em 1em;
+    font-weight:700;
+    border-radius:6px;
 }
-.stButton > button:hover {background-color: #0055a5;}
-.stMetric {
-    background-color: #f0f8ff; padding: 1em;
-    border-radius: 8px; color: #003366; font-weight: bold;
+.stButton > button:hover {
+    background:#f44336;
+    color:#111;
 }
 </style>
+<div class="app-header">
+    <h1>Automated Investment Matrix</h1>
+    <p>Modular Investment Analysis Platform with Real Real‑Time Data for Portfolio Optimization and Advisory</p>
+</div>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
+# --- MARKET INDEXES ---
+@st.cache_data(ttl=300)
+def get_price(ticker):
+    hist = yf.Ticker(ticker).history(period="2d")['Close']
+    if len(hist) >= 2:
+        last, prev = hist.iloc[-1], hist.iloc[-2]
+        delta = last - prev
+        pct = delta / prev * 100
+        return f"${last:,.2f}", f"{delta:+.2f} ({pct:+.2f}%)"
+    return "N/A", ""
 
-def sanitize_string(val):
-    if isinstance(val, str):
-        return (val.replace("–", "-")
-                   .replace("’", "'")
-                   .replace("“", '"')
-                   .replace("”", '"')
-                   .replace("•", "-")
-                   .replace("©", "(c)"))
-    return val
+tickers = {"S&P 500": "^GSPC", "Nasdaq": "^IXIC", "Dow Jones": "^DJI"}
+prices = {n: get_price(t) for n, t in tickers.items()}
 
+market_html = '<div class="market-indices">'
+for name, (price, delta) in prices.items():
+    cls = "positive" if delta.startswith("+") else "negative"
+    market_html += f'''
+    <div class="index-box">
+        <div class="name">{name}</div>
+        <div class="value">{price}</div>
+        <div class="delta {cls}">{delta}</div>
+    </div>'''
+market_html += '</div>'
+st.markdown(market_html, unsafe_allow_html=True)
+
+# --- DATA LOAD ---
 @st.cache_data(ttl=600)
-def get_index_data(ticker):
-    tk = yf.Ticker(ticker)
-    hist = tk.history(period="1mo")
-    hist.reset_index(inplace=True)
-    return hist
-
-# === Sidebar: Real-Time Market Data ===
-st.sidebar.header("Real‑Time Market Data")
-for label, ticker in [("S&P 500", "^GSPC"), ("Nasdaq", "^IXIC"), ("Dow Jones", "^DJI")]:
-    df_market = get_index_data(ticker)
-    if not df_market.empty:
-        last = df_market.iloc[-1]; prev = df_market.iloc[-2]
-        diff = last["Close"] - prev["Close"]
-        pct = (diff / prev["Close"]) * 100
-        st.sidebar.metric(label, f"${last['Close']:.2f}", f"{diff:+.2f} ({pct:+.2f}%)")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.plot(df_market["Date"], df_market["Close"], color="#003366")
-        ax.tick_params(axis="x", labelsize=8, rotation=45)
-        ax.tick_params(axis="y", labelsize=8)
-        ax.grid(True, linestyle="--", alpha=0.3)
-        plt.tight_layout()
-        st.sidebar.pyplot(fig)
-    else:
-        st.sidebar.warning(f"Failed to load {label} data.")
-st.divider()
-
-try:
+def load_data():
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
-    df = df.applymap(sanitize_string)
+    df.columns = [c.strip().replace("–", "-") for c in df.columns]  # ensure consistent dashes
+    return df
 
-    st.subheader("Investment Data")
-    edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
-    st.divider()
+df = load_data()
 
-    st.subheader("Select Investment Types for Analysis")
-    types = sorted(edited_df["Category"].dropna().unique())
-    selected = st.multiselect("Investment Types", types, default=types)
-    filtered_types_df = edited_df[edited_df["Category"].isin(selected)]
+# --- 1. SELECT INVESTMENTS ---
+st.subheader("Investment Portfolio Composition")
+if "Category" not in df.columns:
+    st.error("Missing Category column in data.")
+    st.stop()
+types = sorted(df["Category"].dropna().unique())
+sel = st.multiselect("Choose investment categories:", types, default=types)
 
-    st.subheader("Portfolio Averages & Totals")
-    c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
-    c1.metric("Avg Return (%)", f"{filtered_types_df['Expected Return (%)'].mean():.2f}%")
-    c2.metric("Avg Risk (1–10)", f"{filtered_types_df['Risk Level (1-10)'].mean():.2f}")
-    c3.metric("Avg Cap Rate (%)", f"{filtered_types_df['Cap Rate (%)'].mean():.2f}%")
-    c4.metric("Avg Liquidity", f"{filtered_types_df['Liquidity (1–10)'].mean():.2f}")
-    c5.metric("Avg Volatility", f"{filtered_types_df['Volatility (1–10)'].mean():.2f}")
-    c6.metric("Avg Fees (%)", f"{filtered_types_df['Fees (%)'].mean():.2f}%")
-    c7.metric("Avg Min Investment", f"${filtered_types_df['Minimum Investment ($)'].mean():,.0f}")
-    st.divider()
+# --- 2. EDITABLE DATA ---
+st.subheader("Configure Investment Data")
+filtered_df = df[df["Category"].isin(sel)].copy()
+edited = st.data_editor(filtered_df, use_container_width=True, num_rows="dynamic")
 
-    st.subheader("Investment Visualizations (Compact)")
+# --- 3. PORTFOLIO METRICS ---
+st.subheader("Portfolio Averages and Returns")
+def mean_safe(df, col): return f"{df[col].mean():.2f}" if col in df.columns and not df.empty else "N/A"
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown("**Expected Return**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.bar(filtered_types_df["Investment Name"], filtered_types_df["Expected Return (%)"], color="teal")
-        ax.set_xticklabels(filtered_types_df["Investment Name"], rotation=45, ha="right", fontsize=6)
-        ax.set_ylabel("%", fontsize=8)
-        ax.tick_params(labelsize=6)
-        ax.grid(True, linestyle="--", alpha=0.3)
-        plt.tight_layout()
-        st.pyplot(fig)
+metrics = [
+    ("Avg Return (%)", "Expected Return (%)"),
+    ("Avg Risk", "Risk Level (1-10)"),
+    ("Avg Cap Rate (%)", "Cap Rate (%)"),
+    ("Avg Liquidity", "Liquidity (1-10)"),
+    ("Avg Volatility", "Volatility (1-10)"),
+    ("Avg Fees (%)", "Fees (%)"),
+    ("Avg Min Inv ($)", "Minimum Investment ($)")
+]
+cols = st.columns(len(metrics))
+for (lbl, colname), c in zip(metrics, cols):
+    val = mean_safe(edited, colname)
+    suffix = "%" if "%" in lbl or "Rate" in lbl else "$" if "Inv" in lbl else ""
+    c.metric(lbl, f"{val}{suffix}" if val != "N/A" else val)
 
-    with col2:
-        st.markdown("**Liquidity vs Volatility**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.scatter(
-            filtered_types_df["Volatility (1–10)"],
-            filtered_types_df["Liquidity (1–10)"],
-            s=filtered_types_df["Expected Return (%)"] * 8,
-            c=pd.factorize(filtered_types_df["Category"])[0],
-            cmap="tab10", alpha=0.7
-        )
-        ax.set_xlabel("Volatility", fontsize=8); ax.set_ylabel("Liquidity", fontsize=8)
-        ax.tick_params(labelsize=6); ax.grid(True, linestyle="--", alpha=0.3)
-        plt.tight_layout(); st.pyplot(fig)
+# --- 4. VISUAL INSIGHTS ---
+st.subheader("Portflio Graphs and Trends")
+vc = st.columns(4)
 
-    with col3:
-        st.markdown("**Risk vs Return**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.scatter(
-            filtered_types_df["Risk Level (1-10)"],
-            filtered_types_df["Expected Return (%)"],
-            c=pd.factorize(filtered_types_df["Category"])[0],
-            cmap="tab10", alpha=0.7
-        )
-        ax.set_xlabel("Risk", fontsize=8); ax.set_ylabel("Return %", fontsize=8)
-        ax.tick_params(labelsize=6); ax.grid(True, linestyle="--", alpha=0.3)
-        plt.tight_layout(); st.pyplot(fig)
+def make_bar(x, y):
+    fig, ax = plt.subplots(figsize=(2.6,1.8))
+    ax.bar(x, y, color="#f44336")
+    ax.tick_params(axis="x", rotation=45, labelsize=6)
+    fig.tight_layout(); return fig
 
-    with col4:
-        st.markdown("**Min Investment ($)**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.hist(filtered_types_df["Minimum Investment ($)"], bins=8, color="#003366", edgecolor="white")
-        ax.set_xlabel("Min ($)", fontsize=8); ax.set_ylabel("Count", fontsize=8)
-        ax.tick_params(labelsize=6); ax.grid(True, linestyle="--", alpha=0.3)
-        plt.tight_layout(); st.pyplot(fig)
+def make_scatter(x, y, xlabel, ylabel):
+    fig, ax = plt.subplots(figsize=(2.6,1.8))
+    ax.scatter(x, y, c='red', alpha=0.6, edgecolors='black')
+    ax.set_xlabel(xlabel, fontsize=7); ax.set_ylabel(ylabel, fontsize=7)
+    ax.tick_params(labelsize=6); fig.tight_layout(); return fig
 
-    st.divider()
+vis = [
+    ("Expected Return (%)", make_bar),
+    (("Volatility (1-10)", "Liquidity (1-10)"), make_scatter),
+    (("Fees (%)", "Expected Return (%)"), make_scatter),
+    ("Risk Level (1-10)", None)
+]
+for slot, cfg in zip(vc, vis):
+    if isinstance(cfg[0], tuple):
+        x, y = cfg[0]
+        slot.markdown(f"**{y} vs {x}**")
+        if x in edited and y in edited and not edited.empty:
+            slot.pyplot(cfg[1](edited[x], edited[y], x, y))
+    else:
+        col = cfg[0]
+        slot.markdown(f"**{col}**")
+        if col in edited and not edited.empty:
+            if cfg[1]:
+                slot.pyplot(cfg[1](edited["Investment Name"], edited[col]))
+            else:
+                fig, ax = plt.subplots(figsize=(2.6,1.8))
+                ax.hist(edited[col], bins=7, color="#f44336", alpha=0.7)
+                ax.tick_params(labelsize=6); fig.tight_layout(); slot.pyplot(fig)
 
-    # === Filtering Section ===
-    st.subheader("Additional Filters")
-    time_opts = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
-    hedge_opts = ["All", "Yes", "No"]
-    tfilter = st.selectbox("Time Horizon", time_opts)
-    hfilter = st.selectbox("Inflation Hedge?", hedge_opts)
-    min_filter = st.slider("Minimum Investment ($)", 
-                            int(edited_df["Minimum Investment ($)"].min()),
-                            int(edited_df["Minimum Investment ($)"].max()),
-                            int(edited_df["Minimum Investment ($)"].min()))
+# --- 5. FILTER -->
+st.subheader("Portfolio Choices and Constraints")
+min_i = st.slider("Min Investment ($)", 0, int(edited["Minimum Investment ($)"].max()), 0, step=1000) \
+    if "Minimum Investment ($)" in edited else 0
+min_r = st.slider("Min Return (%)", 0.0, float(edited["Expected Return (%)"].max()), 0.0, step=0.1) \
+    if "Expected Return (%)" in edited else 0
+max_r = st.slider("Max Risk level", 0, 10, 10)
+time_h = st.selectbox("Time Horizon", ["Short", "Medium", "Long"])
+hedge = st.checkbox("Inflation Hedge Only")
 
-    df_final = filtered_types_df.copy()
-    if tfilter != "All":
-        df_final = df_final[df_final["Time Horizon (Short/Medium/Long)"] == tfilter]
-    if hfilter != "All":
-        df_final = df_final[df_final["Inflation Hedge (Yes/No)"] == hfilter]
-    df_final = df_final[df_final["Minimum Investment ($)"] >= min_filter]
+f = edited.copy()
+if "Minimum Investment ($)" in f: f = f[f["Minimum Investment ($)"] >= min_i]
+if "Expected Return (%)" in f: f = f[f["Expected Return (%)"] >= min_r]
+if "Risk Level (1-10)" in f: f = f[f["Risk Level (1-10)"] <= max_r]
+if hedge and "Inflation Hedge (Yes/No)" in f: f = f[f["Inflation Hedge (Yes/No)"] == "Yes"]
 
-    st.subheader("Filtered Investment Table")
-    st.dataframe(df_final, use_container_width=True)
-    st.divider()
+# --- 6. FILTERED TABLE ---
+st.subheader(f"Filtered Investments")
+st.dataframe(f, height=220)
 
-    # === Reporting ===
-    st.subheader("Generate Reports")
-    def create_ppt(dataframe):
-        prs = Presentation()
-        s = prs.slides.add_slide(prs.slide_layouts[0])
-        s.shapes.title.text = "Comprehensive Investment Overview"
-        s.placeholders[1].text = "Alternative & Traditional Investments"
-        avg = dataframe.select_dtypes(include="number").mean(numeric_only=True).round(2)
-        s = prs.slides.add_slide(prs.slide_layouts[1])
-        s.shapes.title.text = "Portfolio Averages"
-        s.placeholders[1].text = "\n".join([f"{k}: {v}" for k, v in avg.items()])
-        chart_file = "chart.png"
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(dataframe["Investment Name"], dataframe["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90); plt.tight_layout(); plt.savefig(chart_file); plt.close()
-        s = prs.slides.add_slide(prs.slide_layouts[5])
-        s.shapes.title.text = "Expected Return Chart"
-        s.shapes.add_picture(chart_file, Inches(1), Inches(1.5), width=Inches(8))
-        fname = "Investment_Presentation.pptx"
-        prs.save(fname)
-        return fname
-
-    def create_doc(dataframe):
-        doc = Document()
-        doc.add_heading("HNW Investment Summary", 0)
-        avg = dataframe.select_dtypes(include="number").mean(numeric_only=True).round(2)
-        doc.add_heading("Portfolio Averages", level=1)
-        for k, v in avg.items():
-            doc.add_paragraph(f"{k}: {v}")
-        chart_file = "chart.png"
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(dataframe["Investment Name"], dataframe["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90); plt.tight_layout(); plt.savefig(chart_file); plt.close()
-        doc.add_heading("Expected Return Chart", level=1)
-        doc.add_picture(chart_file, width=DocxInches(6.5))
-        fname = "Investment_Summary.docx"
-        doc.save(fname)
-        return fname
-
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("Generate PowerPoint"):
-            ppt = create_ppt(df_final)
-            with open(ppt, "rb") as fp:
-                st.download_button("Download PPT", fp, file_name=ppt)
-    with c2:
-        if st.button("Generate Word Report"):
-            doc = create_doc(df_final)
-            with open(doc, "rb") as fd:
-                st.download_button("Download DOCX", fd, file_name=doc)
-
-except Exception as err:
-    st.error(f"⚠️ Error loading data: {err}")
+# --- 7. EXPORT REPORTS ---
+st.subheader("Export Data and Reports")
+b1, b2 = st.columns(2)
+with b1:
+    if st.button("Download PowerPoint"):
+        st.success("PPT placeholder")
+with b2:
+    if st.button("Download Word"):
+        st.success("Word placeholder")
