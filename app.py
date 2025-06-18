@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 st.markdown("""
 <style>
-/* Increase top padding to keep space for fixed header */
+/* Top padding for fixed header */
 .css-1d391kg { padding-top:110px !important; }
 
-/* Fixed top header with black background */
+/* Fixed top header */
 .app-header {
     background:#111; 
     color:white; 
@@ -32,44 +32,61 @@ st.markdown("""
     font-size:11px;
 }
 
-/* Left fixed sidebar for market indices */
+/* Narrower left fixed sidebar for market indices */
 .left-sidebar {
     position: fixed;
     top: 80px;
     left: 0;
-    width: 280px;
+    width: 220px;  /* Narrower width */
     height: calc(100vh - 80px);
     background: #111;
     color: white;
-    padding: 15px;
+    padding: 20px 15px;  /* padding inside for breathing room */
     overflow-y: auto;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.4);
+    box-shadow: 2px 0 8px rgba(0,0,0,0.6);
     z-index: 998;
-    font-family: inherit;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Main content shifted right to avoid overlap */
+/* Main content shifted right */
 .main-content {
-    margin-left: 300px !important;  /* leave 20px extra space */
+    margin-left: 240px !important;  /* Slightly bigger than sidebar width */
     padding: 0 20px 20px 20px;
 }
 
-/* Style for market index items inside sidebar */
-.left-sidebar .index-name {
-    font-size: 13px;
+/* Market index item styles */
+.left-sidebar h2 {
+    color: #f44336;
+    margin-bottom: 15px;
     font-weight: 700;
+    font-size: 22px;
+    border-bottom: 1px solid #f44336;
+    padding-bottom: 6px;
 }
+
+.left-sidebar .index-name {
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 14px;
+    letter-spacing: 0.5px;
+}
+
 .left-sidebar .index-value {
-    font-size: 18px;
+    font-size: 20px;
     margin-top: 2px;
+    font-weight: 600;
+    color: #fff;
 }
+
 .left-sidebar .index-delta {
-    font-size: 13px;
+    font-size: 14px;
     margin-top: 2px;
+    font-weight: 600;
 }
+
 .left-sidebar hr {
-    border-color: #444;
-    margin: 8px 0;
+    border-color: #333;
+    margin: 12px 0;
 }
 
 /* Buttons styling */
@@ -116,7 +133,7 @@ for t, name in [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"), ("^DJI", "Dow Jones")
 
 # Render the sidebar container
 st.markdown('<div class="left-sidebar">', unsafe_allow_html=True)
-st.markdown('<h2 style="color:#f44336; margin-bottom:10px;">Market Indices</h2>', unsafe_allow_html=True)
+st.markdown('<h2>Market Indices</h2>', unsafe_allow_html=True)
 
 for name, (val, delta) in prices.items():
     color = "#4caf50" if delta.startswith("+") else "#f44336"
@@ -253,4 +270,4 @@ with b2:
     if st.button("📥 Download Word"):
         st.success("Word export placeholder")
 
-st.markdown('</div>', unsafe_allow_html=True)  # close main-content div
+st.markdown('</div>', unsafe_allow_html=True)  # Close main-content div
