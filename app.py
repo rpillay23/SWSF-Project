@@ -7,20 +7,16 @@ from docx import Document
 from docx.shared import Inches as DocxInches
 import requests
 
-# === Page Configuration and Styling ===
+# === Page Configuration ===
 st.set_page_config(page_title="Automated Investment Matrix", layout="wide")
 
+# === Custom Styling ===
 st.markdown("""
     <style>
     html, body, [class*="css"] {
         font-family: 'Helvetica Neue', Helvetica, sans-serif;
         background-color: white;
         color: #003366;
-    }
-
-    h1, h2, h3, .stMarkdown {
-        color: #003366;
-        font-weight: bold;
     }
 
     .title-box {
@@ -45,120 +41,84 @@ st.markdown("""
         font-stretch: condensed;
         margin-bottom: 30px;
     }
-
-    .stButton > button {
-        background-color: #003366;
-        color: white;
-        border-radius: 6px;
-        padding: 0.5em 1em;
-        border: none;
-        font-weight: bold;
-    }
-
-    .stButton > button:hover {
-        background-color: #0055a5;
-    }
-
-    .stMetric {
-        background-color: #f0f8ff;
-        padding: 1em;
-        border-radius: 8px;
-        color: #003366;
-        font-weight: bold;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# === Title & Subtitle ===
+# === Title ===
 st.markdown('<div class="title-box"><h1>Automated Investment Matrix</h1></div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Automated Software for Traditional and Alternate Investment Analysis Designed for Portfolio Management and Building a Modular Sustainable Wealth Strategy Framework (SWSF)</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Modular Platform for Traditional & Alternative Investment Evaluation</div>', unsafe_allow_html=True)
 
-# === Helper: Clean Unicode Characters ===
+# === Helper: Sanitize Strings ===
 def sanitize_string(s):
     if isinstance(s, str):
-        return (
-            s.replace("–", "-")
-             .replace("’", "'")
-             .replace("“", '"')
-             .replace("”", '"')
-             .replace("•", "-")
-             .replace("©", "(c)")
-        )
+        return s.replace("–", "-").replace("’", "'").replace("“", '"').replace("”", '"').replace("•", "-").replace("©", "(c)")
     return s
 
-# === Fetch Real-Time Data from Financial Modeling Prep API ===
+# === Fetch Real-Time Market Data ===
 def fetch_real_time_data():
     tickers = ["AAPL", "AMZN", "GOOGL", "META", "NVDA", "TSLA", "^GSPC", "^IXIC", "^DJI"]
     url = f"https://financialmodelingprep.com/api/v3/quote/{','.join(tickers)}?apikey=YOUR_API_KEY"
-    response = requests.get(url)
-    return response.json()
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+    except Exception as e:
+        st.sidebar.error(f"API Error: {e}")
+    return []
 
-# === Sidebar: Real-Time Market Data ===
-st.sidebar.header("Real-Time Market Data")
-
-data = fetch_real_time_data()
-if data:
-    for item in data:
-        if item['symbol'] in ["AAPL", "AMZN", "GOOGL", "META", "NVDA", "TSLA"]:
-            st.sidebar.metric(label=item['name'], value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
-        elif item['symbol'] == "^GSPC":
-            st.sidebar.metric(label="S&P 500", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
-        elif item['symbol'] == "^IXIC":
-            st.sidebar.metric(label="Nasdaq", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
-        elif item['symbol'] == "^DJI":
-            st.sidebar.metric(label="Dow Jones", value=f"${item['price']:.2f}", delta=f"{item['change']:.2f} ({item['changesPercentage']:.2f}%)")
+# === Sidebar: Live Market Tracker ===
+st.sidebar.header("📈 Real-Time Market Data")
+live_data = fetch_real_time_data()
+if live_data:
+    for item in live_data:
+        name = item.get('name', item['symbol'])
+        price = item.get('price', 0)
+        change = item.get('change', 0)
+        percent = item.get('changesPercentage', 0)
+        st.sidebar.metric(label=name, value=f"${price:.2f}", delta=f"{change:+.2f} ({percent:+.2f}%)")
 else:
-    st.sidebar.warning("Failed to fetch real-time data.")
+    st.sidebar.warning("Unable to fetch market data.")
 
-st.divider()
-
+# === Main Application ===
 try:
-    # === Load Excel Data ===
     df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
     df = df.applymap(sanitize_string)
 
-    # === Editable Table ===
-    st.subheader("Investment Data")
+    st.subheader("Investment Data Table")
     edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
     st.divider()
 
-    # === Portfolio Metrics: 7 columns inline ===
-    st.subheader("Portfolio Averages and Totals")
+    # Portfolio Metrics
+    st.subheader("Portfolio Metrics")
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
-    col2.metric("Avg Risk (1–10)", f"{edited_df['Risk Level (1-10)'].mean():.2f}")
-    col3.metric("Avg Cap Rate (%)", f"{edited_df['Cap Rate (%)'].mean():.2f}%")
+    col2.metric("Avg Risk", f"{edited_df['Risk Level (1-10)'].mean():.2f}")
+    col3.metric("Avg Cap Rate", f"{edited_df['Cap Rate (%)'].mean():.2f}%")
     col4.metric("Avg Liquidity", f"{edited_df['Liquidity (1–10)'].mean():.2f}")
     col5.metric("Avg Volatility", f"{edited_df['Volatility (1–10)'].mean():.2f}")
-    col6.metric("Avg Fees (%)", f"{edited_df['Fees (%)'].mean():.2f}%")
-    col7.metric("Avg Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
+    col6.metric("Avg Fees", f"{edited_df['Fees (%)'].mean():.2f}%")
+    col7.metric("Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
     st.divider()
 
-    # === Charts ===
+    # Charts
     st.subheader("Expected Return by Investment")
     st.bar_chart(edited_df.set_index("Investment Name")["Expected Return (%)"])
 
     st.subheader("Liquidity vs. Volatility")
-    st.scatter_chart(
-        edited_df,
-        x="Volatility (1–10)",
-        y="Liquidity (1–10)",
-        size="Expected Return (%)",
-        color="Category"
-    )
+    st.scatter_chart(edited_df, x="Volatility (1–10)", y="Liquidity (1–10)", size="Expected Return (%)", color="Category")
     st.divider()
 
-    # === Filters ===
-    st.subheader("Filters")
+    # Filters
+    st.subheader("Filter Your Portfolio")
     time_options = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
     hedge_options = ["All", "Yes", "No"]
 
     time_filter = st.selectbox("Select Time Horizon", time_options)
     hedge_filter = st.selectbox("Inflation Hedge?", hedge_options)
     min_inv_filter = st.slider("Minimum Investment ($)",
-                               int(edited_df["Minimum Investment ($)"].min()),
-                               int(edited_df["Minimum Investment ($)"].max()),
-                               int(edited_df["Minimum Investment ($)"].min()))
+        int(edited_df["Minimum Investment ($)"].min()),
+        int(edited_df["Minimum Investment ($)"].max()),
+        int(edited_df["Minimum Investment ($)"].min()))
 
     filtered_df = edited_df.copy()
     if time_filter != "All":
@@ -171,57 +131,58 @@ try:
     st.dataframe(filtered_df, use_container_width=True)
     st.divider()
 
-    # === Report Generators ===
-    st.subheader("Generate Reports")
+    # === Export Reports ===
+    st.subheader("📤 Export Reports")
 
     def create_ppt(df):
         prs = Presentation()
         slide = prs.slides.add_slide(prs.slide_layouts[0])
-        slide.shapes.title.text = "Comprehensive Investment Overview"
-        slide.placeholders[1].text = "Alternative & Traditional Investments"
+        slide.shapes.title.text = "Investment Overview"
+        slide.placeholders[1].text = "Portfolio Summary"
 
         avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
         slide = prs.slides.add_slide(prs.slide_layouts[1])
-        slide.shapes.title.text = "Portfolio Averages"
+        slide.shapes.title.text = "Averages"
         slide.placeholders[1].text = "\n".join([f"{k}: {v}" for k, v in avg.items()])
 
-        chart_file = "streamlit_chart.png"
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
         plt.xticks(rotation=90)
         plt.tight_layout()
-        plt.savefig(chart_file)
+        chart_path = "ppt_chart.png"
+        plt.savefig(chart_path)
         plt.close()
 
         slide = prs.slides.add_slide(prs.slide_layouts[5])
-        slide.shapes.title.text = "Expected Return Chart"
-        slide.shapes.add_picture(chart_file, Inches(1), Inches(1.5), width=Inches(8))
+        slide.shapes.title.text = "Return Chart"
+        slide.shapes.add_picture(chart_path, Inches(1), Inches(1.5), width=Inches(8))
 
-        ppt_file = "HNW_Investment_Presentation.pptx"
+        ppt_file = "Investment_Presentation.pptx"
         prs.save(ppt_file)
         return ppt_file
 
     def create_docx(df):
-        document = Document()
-        document.add_heading("HNW Investment Summary", 0)
+        doc = Document()
+        doc.add_heading("Investment Summary", 0)
 
         avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
-        document.add_heading("Portfolio Averages", level=1)
+        doc.add_heading("Portfolio Averages", level=1)
         for k, v in avg.items():
-            document.add_paragraph(f"{k}: {v}")
+            doc.add_paragraph(f"{k}: {v}")
 
-        chart_file = "streamlit_chart.png"
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
         plt.xticks(rotation=90)
         plt.tight_layout()
-        plt.savefig(chart_file)
+        chart_path = "docx_chart.png"
+        plt.savefig(chart_path)
         plt.close()
 
-        document.add_heading("Expected Return Chart", level=1)
-        document.add_picture(chart_file, width=DocxInches(6.5))
-        docx_file = "HNW_Investment_Summary.docx"
-        document.save(docx_file)
+        doc.add_heading("Return Chart", level=1)
+        doc.add_picture(chart_path, width=DocxInches(6.5))
+
+        docx_file = "Investment_Summary.docx"
+        doc.save(docx_file)
         return docx_file
 
     col1, col2 = st.columns(2)
@@ -235,6 +196,7 @@ try:
         if st.button("Generate Word Report"):
             docx_file = create_docx(filtered_df)
             with open(docx_file, "rb") as f:
-                st.download_button
-::contentReference[oaicite:0]{index=0}
- 
+                st.download_button("Download Word Report", f, file_name=docx_file)
+
+except Exception as e:
+    st.error(f"⚠️ An error occurred: {e}")
