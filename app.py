@@ -87,42 +87,129 @@ def sanitize_string(s):
         )
     return s
 
-# === Real-Time S&P 500 Data ===
 @st.cache_data(ttl=600)
-def get_sp500_data():
-    sp500 = yf.Ticker("^GSPC")
-    hist = sp500.history(period="1mo")
+def get_index_data(ticker):
+    index = yf.Ticker(ticker)
+    hist = index.history(period="1mo")
     hist.reset_index(inplace=True)
     return hist
 
-# === Sidebar: S&P 500 Tracker ===
+# === Sidebar: Real-Time Market Data ===
 st.sidebar.header("Real-Time Market Data")
-sp500_data = get_sp500_data()
 
+# S&P 500
+sp500_data = get_index_data("^GSPC")
 if not sp500_data.empty:
-    latest = sp500_data.iloc[-1]
-    prev = sp500_data.iloc[-2]
-    latest_close = latest['Close']
-    prev_close = prev['Close']
-    change = latest_close - prev_close
-    pct_change = (change / prev_close) * 100
+    latest_sp500 = sp500_data.iloc[-1]
+    prev_sp500 = sp500_data.iloc[-2]
+    latest_sp500_close = latest_sp500['Close']
+    prev_sp500_close = prev_sp500['Close']
+    change_sp500 = latest_sp500_close - prev_sp500_close
+    pct_change_sp500 = (change_sp500 / prev_sp500_close) * 100
 
-    st.sidebar.metric("S&P 500", f"${latest_close:.2f}", f"{change:+.2f} ({pct_change:+.2f}%)")
+    st.sidebar.metric("S&P 500", f"${latest_sp500_close:.2f}", f"{change_sp500:+.2f} ({pct_change_sp500:+.2f}%)")
 
-    fig, ax = plt.subplots(figsize=(3.5, 2))
-    ax.plot(sp500_data['Date'], sp500_data['Close'], color='#003366')
+    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
+    ax.plot(sp500_data['Date'], sp500_data['Close'], label='S&P 500 Close', color='#003366')
     ax.set_xlabel("")
-    ax.set_ylabel("Price")
+    ax.set_ylabel("Price ($)")
     ax.set_title("")
-    ax.tick_params(axis='x', labelsize=8, rotation=45)
-    ax.tick_params(axis='y', labelsize=8)
     ax.grid(True, linestyle='--', alpha=0.5)
+    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
     plt.tight_layout()
     st.sidebar.pyplot(fig)
 else:
-    st.sidebar.warning("⚠️ Failed to fetch S&P 500 data.")
+    st.sidebar.warning("Failed to fetch S&P 500 data.")
+
+# Nasdaq
+nasdaq_data = get_index_data("^IXIC")
+if not nasdaq_data.empty:
+    latest_nasdaq = nasdaq_data.iloc[-1]
+    prev_nasdaq = nasdaq_data.iloc[-2]
+    latest_nasdaq_close = latest_nasdaq['Close']
+    prev_nasdaq_close = prev_nasdaq['Close']
+    change_nasdaq = latest_nasdaq_close - prev_nasdaq_close
+    pct_change_nasdaq = (change_nasdaq / prev_nasdaq_close) * 100
+
+    st.sidebar.metric("Nasdaq", f"${latest_nasdaq_close:.2f}", f"{change_nasdaq:+.2f} ({pct_change_nasdaq:+.2f}%)")
+
+    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
+    ax.plot(nasdaq_data['Date'], nasdaq_data['Close'], label='Nasdaq Close', color='#003366')
+    ax.set_xlabel("")
+    ax.set_ylabel("Price ($)")
+    ax.set_title("")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
+    plt.tight_layout()
+    st.sidebar.pyplot(fig)
+else:
+    st.sidebar.warning("Failed to fetch Nasdaq data.")
+
+# Dow Jones
+dowjones_data = get_index_data("^DJI")
+if not dowjones_data.empty:
+    latest_dowjones = dowjones_data.iloc[-1]
+    prev_dowjones = dowjones_data.iloc[-2]
+    latest_dowjones_close = latest_dowjones['Close']
+    prev_dowjones_close = prev_dowjones['Close']
+    change_dowjones = latest_dowjones_close - prev_dowjones_close
+    pct_change_dowjones = (change_dowjones / prev_dowjones_close) * 100
+
+    st.sidebar.metric("Dow Jones", f"${latest_dowjones_close:.2f}", f"{change_dowjones:+.2f} ({pct_change_dowjones:+.2f}%)")
+
+    fig, ax = plt.subplots(figsize=(4, 2.5))  # smaller figure
+    ax.plot(dowjones_data['Date'], dowjones_data['Close'], label='Dow Jones Close', color='#003366')
+    ax.set_xlabel("")
+    ax.set_ylabel("Price ($)")
+    ax.set_title("")
+    ax.grid(True, linestyle='--', alpha=0.5)
+    ax.tick_params(axis='x', rotation=45, labelsize=8)
+    ax.tick_params(axis='y', labelsize=8)
+    plt.tight_layout()
+    st.sidebar.pyplot(fig)
+else:
+    st.sidebar.warning("Failed to fetch Dow Jones data.")
 
 st.divider()
+
+try:
+    # === Load Excel Data ===
+    df = pd.read_excel("Comprehensive_Investment_Matrix.xlsx")
+    df = df.applymap(sanitize_string)
+
+    # === Editable Table ===
+    st.subheader("Investment Data")
+    edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
+    st.divider()
+
+    # === Portfolio Metrics: 7 columns inline ===
+    st.subheader("Portfolio Averages and Totals")
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    col1.metric("Avg Return (%)", f"{edited_df['Expected Return (%)'].mean():.2f}%")
+    col2.metric("Avg Risk (1–10)", f"{edited_df['Risk Level (1-10)'].mean():.2f}")
+    col3.metric("Avg Cap Rate (%)", f"{edited_df['Cap Rate (%)'].mean():.2f}%")
+    col4.metric("Avg Liquidity", f"{edited_df['Liquidity (1–10)'].mean():.2f}")
+    col5.metric("Avg Volatility", f"{edited_df['Volatility (1–10)'].mean():.2f}")
+    col6.metric("Avg Fees (%)", f"{edited_df['Fees (%)'].mean():.2f}%")
+    col7.metric("Avg Min Investment", f"${edited_df['Minimum Investment ($)'].mean():,.0f}")
+    st.divider()
+
+    # === Charts ===
+    st.subheader("Expected Return by Investment")
+    st.bar_chart(edited_df.set_index("Investment Name")["Expected Return (%)"])
+
+    st.subheader("Liquidity vs. Volatility")
+    st.scatter_chart(
+        edited_df,
+        x="Volatility (1–10)",
+        y="Liquidity (1–10)",
+        size="Expected Return (%)",
+        color="Category"
+    )
+    st.divider()
+
 
 try:
     # === Load Excel Data ===
