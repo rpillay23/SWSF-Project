@@ -91,27 +91,28 @@ try:
     st.subheader("Select Investment Types for Analysis")
     types = sorted(edited_df["Category"].dropna().unique())
     selected = st.multiselect("Investment Types", types, default=types)
-    filtered_types_df = edited_df[edited_df["Category"].isin(selected)]
+    filtered_df = edited_df[edited_df["Category"].isin(selected)]
 
     st.subheader("Portfolio Averages & Totals")
     c1, c2, c3, c4, c5, c6, c7 = st.columns(7)
-    c1.metric("Avg Return (%)", f"{filtered_types_df['Expected Return (%)'].mean():.2f}%")
-    c2.metric("Avg Risk (1–10)", f"{filtered_types_df['Risk Level (1-10)'].mean():.2f}")
-    c3.metric("Avg Cap Rate (%)", f"{filtered_types_df['Cap Rate (%)'].mean():.2f}%")
-    c4.metric("Avg Liquidity", f"{filtered_types_df['Liquidity (1–10)'].mean():.2f}")
-    c5.metric("Avg Volatility", f"{filtered_types_df['Volatility (1–10)'].mean():.2f}")
-    c6.metric("Avg Fees (%)", f"{filtered_types_df['Fees (%)'].mean():.2f}%")
-    c7.metric("Avg Min Investment", f"${filtered_types_df['Minimum Investment ($)'].mean():,.0f}")
+    c1.metric("Avg Return (%)", f"{filtered_df['Expected Return (%)'].mean():.2f}%")
+    c2.metric("Avg Risk (1–10)", f"{filtered_df['Risk Level (1-10)'].mean():.2f}")
+    c3.metric("Avg Cap Rate (%)", f"{filtered_df['Cap Rate (%)'].mean():.2f}%")
+    c4.metric("Avg Liquidity", f"{filtered_df['Liquidity (1–10)'].mean():.2f}")
+    c5.metric("Avg Volatility", f"{filtered_df['Volatility (1–10)'].mean():.2f}")
+    c6.metric("Avg Fees (%)", f"{filtered_df['Fees (%)'].mean():.2f}%")
+    c7.metric("Avg Min Investment", f"${filtered_df['Minimum Investment ($)'].mean():,.0f}")
     st.divider()
 
-    st.subheader("Investment Visualizations (Compact)")
+    st.subheader("Investment Visualizations")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+    
     with col1:
         st.markdown("**Expected Return**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
-        ax.bar(filtered_types_df["Investment Name"], filtered_types_df["Expected Return (%)"], color="teal")
-        ax.set_xticklabels(filtered_types_df["Investment Name"], rotation=45, ha="right", fontsize=6)
+        fig, ax = plt.subplots(figsize=(3, 2))
+        ax.bar(filtered_df["Investment Name"], filtered_df["Expected Return (%)"], color="teal")
+        ax.set_xticklabels(filtered_df["Investment Name"], rotation=45, ha="right", fontsize=6)
         ax.set_ylabel("%", fontsize=8)
         ax.tick_params(labelsize=6)
         ax.grid(True, linestyle="--", alpha=0.3)
@@ -120,12 +121,12 @@ try:
 
     with col2:
         st.markdown("**Liquidity vs Volatility**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
+        fig, ax = plt.subplots(figsize=(3, 2))
         ax.scatter(
-            filtered_types_df["Volatility (1–10)"],
-            filtered_types_df["Liquidity (1–10)"],
-            s=filtered_types_df["Expected Return (%)"] * 8,
-            c=pd.factorize(filtered_types_df["Category"])[0],
+            filtered_df["Volatility (1–10)"],
+            filtered_df["Liquidity (1–10)"],
+            s=filtered_df["Expected Return (%)"] * 8,
+            c=pd.factorize(filtered_df["Category"])[0],
             cmap="tab10", alpha=0.7
         )
         ax.set_xlabel("Volatility", fontsize=8); ax.set_ylabel("Liquidity", fontsize=8)
@@ -134,11 +135,11 @@ try:
 
     with col3:
         st.markdown("**Risk vs Return**")
-        fig, ax = plt.subplots(figsize=(4, 2.5))
+        fig, ax = plt.subplots(figsize=(3, 2))
         ax.scatter(
-            filtered_types_df["Risk Level (1-10)"],
-            filtered_types_df["Expected Return (%)"],
-            c=pd.factorize(filtered_types_df["Category"])[0],
+            filtered_df["Risk Level (1-10)"],
+            filtered_df["Expected Return (%)"],
+            c=pd.factorize(filtered_df["Category"])[0],
             cmap="tab10", alpha=0.7
         )
         ax.set_xlabel("Risk", fontsize=8); ax.set_ylabel("Return %", fontsize=8)
@@ -146,24 +147,23 @@ try:
         plt.tight_layout(); st.pyplot(fig)
 
     with col4:
-    st.markdown("**Fees vs Expected Return**")
-    fig, ax = plt.subplots(figsize=(4, 2.5))
-    ax.scatter(
-        filtered_types_df["Fees (%)"],
-        filtered_types_df["Expected Return (%)"],
-        c=pd.factorize(filtered_types_df["Category"])[0],
-        cmap="tab10", alpha=0.7
-    )
-    ax.set_xlabel("Fees (%)", fontsize=8)
-    ax.set_ylabel("Return (%)", fontsize=8)
-    ax.tick_params(labelsize=6)
-    ax.grid(True, linestyle="--", alpha=0.3)
-    plt.tight_layout()
-    st.pyplot(fig)
+        st.markdown("**Fees vs Expected Return**")
+        fig, ax = plt.subplots(figsize=(3, 2))
+        ax.scatter(
+            filtered_df["Fees (%)"],
+            filtered_df["Expected Return (%)"],
+            c=pd.factorize(filtered_df["Category"])[0],
+            cmap="tab10", alpha=0.7
+        )
+        ax.set_xlabel("Fees (%)", fontsize=8)
+        ax.set_ylabel("Return (%)", fontsize=8)
+        ax.tick_params(labelsize=6)
+        ax.grid(True, linestyle="--", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig)
 
     st.divider()
 
-    # === Filtering Section ===
     st.subheader("Additional Filters")
     time_opts = ["All"] + sorted(edited_df["Time Horizon (Short/Medium/Long)"].dropna().unique())
     hedge_opts = ["All", "Yes", "No"]
@@ -174,7 +174,7 @@ try:
                             int(edited_df["Minimum Investment ($)"].max()),
                             int(edited_df["Minimum Investment ($)"].min()))
 
-    df_final = filtered_types_df.copy()
+    df_final = filtered_df.copy()
     if tfilter != "All":
         df_final = df_final[df_final["Time Horizon (Short/Medium/Long)"] == tfilter]
     if hfilter != "All":
@@ -185,56 +185,71 @@ try:
     st.dataframe(df_final, use_container_width=True)
     st.divider()
 
-    # === Reporting ===
+    # === Reports ===
     st.subheader("Generate Reports")
-    def create_ppt(dataframe):
+
+    def create_ppt(df):
         prs = Presentation()
-        s = prs.slides.add_slide(prs.slide_layouts[0])
-        s.shapes.title.text = "Comprehensive Investment Overview"
-        s.placeholders[1].text = "Alternative & Traditional Investments"
-        avg = dataframe.select_dtypes(include="number").mean(numeric_only=True).round(2)
-        s = prs.slides.add_slide(prs.slide_layouts[1])
-        s.shapes.title.text = "Portfolio Averages"
-        s.placeholders[1].text = "\n".join([f"{k}: {v}" for k, v in avg.items()])
-        chart_file = "chart.png"
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(dataframe["Investment Name"], dataframe["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90); plt.tight_layout(); plt.savefig(chart_file); plt.close()
-        s = prs.slides.add_slide(prs.slide_layouts[5])
-        s.shapes.title.text = "Expected Return Chart"
-        s.shapes.add_picture(chart_file, Inches(1), Inches(1.5), width=Inches(8))
-        fname = "Investment_Presentation.pptx"
-        prs.save(fname)
-        return fname
+        slide = prs.slides.add_slide(prs.slide_layouts[0])
+        slide.shapes.title.text = "Comprehensive Investment Overview"
+        slide.placeholders[1].text = "Alternative & Traditional Investments"
 
-    def create_doc(dataframe):
-        doc = Document()
-        doc.add_heading("HNW Investment Summary", 0)
-        avg = dataframe.select_dtypes(include="number").mean(numeric_only=True).round(2)
-        doc.add_heading("Portfolio Averages", level=1)
+        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+        slide = prs.slides.add_slide(prs.slide_layouts[1])
+        slide.shapes.title.text = "Portfolio Averages"
+        slide.placeholders[1].text = "\n".join([f"{k}: {v}" for k, v in avg.items()])
+
+        chart_file = "streamlit_chart.png"
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(chart_file)
+        plt.close()
+
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        slide.shapes.title.text = "Expected Return Chart"
+        slide.shapes.add_picture(chart_file, Inches(1), Inches(1.5), width=Inches(8))
+
+        ppt_file = "HNW_Investment_Presentation.pptx"
+        prs.save(ppt_file)
+        return ppt_file
+
+    def create_docx(df):
+        document = Document()
+        document.add_heading("HNW Investment Summary", 0)
+
+        avg = df.select_dtypes(include='number').mean(numeric_only=True).round(2)
+        document.add_heading("Portfolio Averages", level=1)
         for k, v in avg.items():
-            doc.add_paragraph(f"{k}: {v}")
-        chart_file = "chart.png"
+            document.add_paragraph(f"{k}: {v}")
+
+        chart_file = "streamlit_chart.png"
         fig, ax = plt.subplots(figsize=(10, 4))
-        ax.bar(dataframe["Investment Name"], dataframe["Expected Return (%)"], color="teal")
-        plt.xticks(rotation=90); plt.tight_layout(); plt.savefig(chart_file); plt.close()
-        doc.add_heading("Expected Return Chart", level=1)
-        doc.add_picture(chart_file, width=DocxInches(6.5))
-        fname = "Investment_Summary.docx"
-        doc.save(fname)
-        return fname
+        ax.bar(df["Investment Name"], df["Expected Return (%)"], color="teal")
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(chart_file)
+        plt.close()
 
-    c1, c2 = st.columns(2)
-    with c1:
+        document.add_heading("Expected Return Chart", level=1)
+        document.add_picture(chart_file, width=DocxInches(6.5))
+        docx_file = "HNW_Investment_Summary.docx"
+        document.save(docx_file)
+        return docx_file
+
+    col1, col2 = st.columns(2)
+    with col1:
         if st.button("Generate PowerPoint"):
-            ppt = create_ppt(df_final)
-            with open(ppt, "rb") as fp:
-                st.download_button("Download PPT", fp, file_name=ppt)
-    with c2:
-        if st.button("Generate Word Report"):
-            doc = create_doc(df_final)
-            with open(doc, "rb") as fd:
-                st.download_button("Download DOCX", fd, file_name=doc)
+            ppt_file = create_ppt(df_final)
+            with open(ppt_file, "rb") as f:
+                st.download_button("Download PowerPoint", f, file_name=ppt_file)
 
-except Exception as err:
-    st.error(f"⚠️ Error loading data: {err}")
+    with col2:
+        if st.button("Generate Word Report"):
+            docx_file = create_docx(df_final)
+            with open(docx_file, "rb") as f:
+                st.download_button("Download Word Report", f, file_name=docx_file)
+
+except Exception as e:
+    st.error(f"⚠️ Error loading Excel file: {e}")
